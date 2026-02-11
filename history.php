@@ -1,19 +1,5 @@
 <?php
-session_start();
-include '../../config/database.php';
-
-if(!isset($_SESSION['admin_id'])){
-  header("Location: ../login.php");
-  exit;
-}
-
-$id = $_SESSION['admin_id'];
-$admin_q = mysqli_query($conn, "SELECT * FROM admin WHERE id=$id");
-$a = mysqli_fetch_assoc($admin_q);
-
-if(!$a){
-  die("Admin tidak ditemukan");
-}
+include 'header.php';
 
 // Check if this is an AJAX request
 if(isset($_GET['ajax']) && $_GET['ajax'] == '1') {
@@ -166,7 +152,7 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
   }
 
   .main-content {
-    margin-left: 250px;
+    margin-left: 10px;
     padding: 40px 30px;
     min-height: 100vh;
     animation: fadeIn 0.3s ease;
@@ -455,9 +441,7 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
 </head>
 
 <body>
-
-<?php include '../../assets/admin_sidebar.php'; ?>
-
+  
 <div class="main-content">
 
   <div class="welcome-card">
@@ -520,15 +504,6 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-// Load sidebar state from localStorage
-if(localStorage.getItem('sidebarCollapsed')==='true') {
-  document.body.classList.add('sidebar-collapsed');
-}
-document.addEventListener('click', function(e) {
-  if(window.innerWidth<=768 && !document.querySelector('.sidebar').contains(e.target) && !document.querySelector('.sidebar-toggle').contains(e.target) && !document.body.classList.contains('sidebar-collapsed')) {
-    document.body.classList.add('sidebar-collapsed');
-  }
-});
 
 // AJAX Search Function
 function performSearch() {

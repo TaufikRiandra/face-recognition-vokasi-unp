@@ -1,19 +1,5 @@
 <?php
-session_start();
-include '../../config/database.php';
-
-if(!isset($_SESSION['admin_id'])){
-  header("Location: ../login.php");
-  exit;
-}
-
-$id = $_SESSION['admin_id'];
-$admin_q = mysqli_query($conn, "SELECT * FROM admin WHERE id=$id");
-$a = mysqli_fetch_assoc($admin_q);
-
-if(!$a){
-  die("Admin tidak ditemukan");
-}
+include 'header.php';
 
 // Get all labor for dropdown
 $labor_query = mysqli_query($conn, "SELECT id, nama FROM labor ORDER BY nama");
@@ -73,7 +59,7 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
   }
 
   .main-content {
-    margin-left: 250px;
+    margin-left: 10px;
     padding: 40px 30px;
     min-height: 100vh;
     animation: fadeIn 0.3s ease;
@@ -821,8 +807,6 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
 </head>
 
 <body>
-
-<?php include '../../assets/admin_sidebar.php'; ?>
 
 <div class="main-content">
 

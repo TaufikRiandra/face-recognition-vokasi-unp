@@ -1,19 +1,5 @@
 <?php
-session_start();
-include '../../config/database.php';
-
-if(!isset($_SESSION['admin_id'])){
-  header("Location: ../login.php");
-  exit;
-}
-
-$id = $_SESSION['admin_id'];
-$admin_q = mysqli_query($conn, "SELECT * FROM admin WHERE id=$id");
-$a = mysqli_fetch_assoc($admin_q);
-
-if(!$a){
-  die("Admin tidak ditemukan");
-}
+include 'header.php';
 
 // Get today's date
 $today = date('Y-m-d');
@@ -133,7 +119,7 @@ $total_unik = mysqli_fetch_assoc(mysqli_query($conn, $unique_visitors_query))['t
   }
 
   .main-content {
-    margin-left: 250px;
+    margin-left: 10px;
     padding: 40px 30px;
     min-height: 100vh;
     animation: fadeIn 0.3s ease;
@@ -467,12 +453,154 @@ $total_unik = mysqli_fetch_assoc(mysqli_query($conn, $unique_visitors_query))['t
       padding: 10px 8px;
     }
   }
+
+  /* Modal Styles */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .modal-overlay.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-content {
+    background: var(--bg-primary);
+    border-radius: 10px;
+    padding: 30px;
+    width: 90%;
+    max-width: 450px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    animation: slideInDown 0.3s ease;
+    position: relative;
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid var(--border-color);
+  }
+
+  .modal-icon {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: white;
+  }
+
+  .modal-header h3 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+  }
+
+  .modal-form-group {
+    margin-bottom: 20px;
+  }
+
+  .modal-form-group label {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 14px;
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  .modal-form-group input {
+    width: 100%;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 14px;
+    color: var(--text-primary);
+    background-color: var(--bg-primary);
+    transition: all 0.2s;
+  }
+
+  .modal-form-group input:focus {
+    border-color: var(--primary);
+    outline: none;
+    box-shadow: 0 0 0 0.2rem rgba(245, 158, 11, 0.25);
+  }
+
+  .modal-footer {
+    display: flex;
+    gap: 10px;
+    margin-top: 25px;
+  }
+
+  .modal-btn {
+    flex: 1;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .modal-btn-primary {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white;
+  }
+
+  .modal-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+  }
+
+  .modal-btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .modal-btn-secondary {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 2px solid var(--border-color);
+  }
+
+  .modal-btn-secondary:hover {
+    border-color: var(--primary);
+  }
+
+  .form-error {
+    color: var(--danger);
+    font-size: 12px;
+    margin-top: 5px;
+    display: none;
+  }
+
+  .form-error.show {
+    display: block;
+  }
 </style>
 </head>
 
 <body>
-
-<?php include '../../assets/admin_sidebar.php'; ?>
 
 <div class="main-content">
 
@@ -516,6 +644,9 @@ $total_unik = mysqli_fetch_assoc(mysqli_query($conn, $unique_visitors_query))['t
             </option>
           <?php endforeach; ?>
         </select>
+        <button id="btnTambahUser" class="btn btn-primary" style="white-space: nowrap;">
+          <i class="fas fa-user-plus"></i> Tambah User
+        </button>
         <a href="history.php" class="btn btn-primary" style="white-space: nowrap;">
           <i class="fas fa-history"></i> Riwayat
         </a>
@@ -581,13 +712,241 @@ $total_unik = mysqli_fetch_assoc(mysqli_query($conn, $unique_visitors_query))['t
         <p style="font-size: 14px; font-weight: 400; margin: 0;">Belum ada pengunjung yang tercatat hari ini. Klik tombol "Input Absensi Baru" untuk memulai.</p>
       </div>
     <?php endif; ?>
-  </div>
+  </div></div>
 
+</div>
+
+<!-- Modal Tambah User -->
+<div id="modalTambahUser" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-icon">
+        <i class="fas fa-user-plus"></i>
+      </div>
+      <h3>Tambah User Baru</h3>
+    </div>
+
+    <form id="formTambahUser">
+      <div class="modal-form-group">
+        <label for="inputNama">Nama Lengkap</label>
+        <input type="text" id="inputNama" name="nama" placeholder="Masukkan nama lengkap" required>
+        <div class="form-error" id="errorNama"></div>
+      </div>
+
+      <div class="modal-form-group">
+        <label for="inputNIM">NIM</label>
+        <input type="text" id="inputNIM" name="nim" placeholder="Masukkan NIM" required>
+        <div class="form-error" id="errorNIM"></div>
+      </div>
+
+      <div class="modal-form-group">
+        <label for="inputEmail">Email</label>
+        <input type="email" id="inputEmail" name="email" placeholder="Masukkan email" required>
+        <div class="form-error" id="errorEmail"></div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" id="btnBatalUser" class="modal-btn modal-btn-secondary">
+          <i class="fas fa-times"></i> Batal
+        </button>
+        <button type="submit" id="btnSimpanUser" class="modal-btn modal-btn-primary">
+          <i class="fas fa-save"></i> Simpan
+        </button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
+// Modal Management
+const modalTambahUser = document.getElementById('modalTambahUser');
+const formTambahUser = document.getElementById('formTambahUser');
+const btnTambahUser = document.getElementById('btnTambahUser');
+const btnBatalUser = document.getElementById('btnBatalUser');
+const btnSimpanUser = document.getElementById('btnSimpanUser');
+const inputNama = document.getElementById('inputNama');
+const inputNIM = document.getElementById('inputNIM');
+const inputEmail = document.getElementById('inputEmail');
+
+let formHasChanged = false;
+let isSubmitting = false;
+
+// Track form changes
+function setupFormChangeTracking() {
+  formTambahUser.addEventListener('input', function() {
+    formHasChanged = (inputNama.value.trim() || inputNIM.value.trim() || inputEmail.value.trim());
+  });
+}
+
+// Open modal
+function openModalTambahUser() {
+  formHasChanged = false;
+  formTambahUser.reset();
+  clearAllErrors();
+  modalTambahUser.classList.add('active');
+  inputNama.focus();
+  setupFormChangeTracking();
+}
+
+// Close modal with conditions
+function closeModalTambahUser() {
+  if(formHasChanged && !isSubmitting) {
+    // Show browser confirmation
+    const confirmation = confirm('Formulir belum disimpan. Apakah Anda yakin ingin menutup?');
+    if(!confirmation) return;
+  }
+  modalTambahUser.classList.remove('active');
+  formTambahUser.reset();
+  formHasChanged = false;
+  clearAllErrors();
+}
+
+// Clear all errors
+function clearAllErrors() {
+  document.getElementById('errorNama').textContent = '';
+  document.getElementById('errorNama').classList.remove('show');
+  document.getElementById('errorNIM').textContent = '';
+  document.getElementById('errorNIM').classList.remove('show');
+  document.getElementById('errorEmail').textContent = '';
+  document.getElementById('errorEmail').classList.remove('show');
+}
+
+// Validate form
+function validateForm() {
+  clearAllErrors();
+  let isValid = true;
+
+  const nama = inputNama.value.trim();
+  const nim = inputNIM.value.trim();
+  const email = inputEmail.value.trim();
+
+  if(!nama) {
+    document.getElementById('errorNama').textContent = 'Nama tidak boleh kosong';
+    document.getElementById('errorNama').classList.add('show');
+    isValid = false;
+  }
+
+  if(!nim) {
+    document.getElementById('errorNIM').textContent = 'NIM tidak boleh kosong';
+    document.getElementById('errorNIM').classList.add('show');
+    isValid = false;
+  }
+
+  if(!email) {
+    document.getElementById('errorEmail').textContent = 'Email tidak boleh kosong';
+    document.getElementById('errorEmail').classList.add('show');
+    isValid = false;
+  } else if(!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+    document.getElementById('errorEmail').textContent = 'Format email tidak valid';
+    document.getElementById('errorEmail').classList.add('show');
+    isValid = false;
+  }
+
+  return isValid;
+}
+
+// Submit form
+formTambahUser.addEventListener('submit', async function(e) {
+  e.preventDefault();
+
+  if(!validateForm()) return;
+
+  isSubmitting = true;
+  btnSimpanUser.disabled = true;
+  btnSimpanUser.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+
+  const formData = new FormData(formTambahUser);
+
+  try {
+    const response = await fetch('api_add_user.php', {
+      method: 'POST',
+      body: formData
+    });
+
+    const data = await response.json();
+
+    if(data.success) {
+      // Don't show notification on success, just close modal
+      formHasChanged = false;
+      closeModalTambahUser();
+      
+      // Show success message using toast or notification
+      showSuccessNotification(data.message);
+      
+      // Reload page after 1 second
+      setTimeout(() => {
+        location.reload();
+      }, 1000);
+    } else {
+      // Show error
+      if(data.error.includes('NIM')) {
+        document.getElementById('errorNIM').textContent = data.error;
+        document.getElementById('errorNIM').classList.add('show');
+      } else if(data.error.includes('Email')) {
+        document.getElementById('errorEmail').textContent = data.error;
+        document.getElementById('errorEmail').classList.add('show');
+      } else {
+        alert('Error: ' + data.error);
+      }
+      isSubmitting = false;
+      btnSimpanUser.disabled = false;
+      btnSimpanUser.innerHTML = '<i class="fas fa-save"></i> Simpan';
+    }
+  } catch(error) {
+    console.error('Error:', error);
+    alert('Terjadi kesalahan saat menambah user');
+    isSubmitting = false;
+    btnSimpanUser.disabled = false;
+    btnSimpanUser.innerHTML = '<i class="fas fa-save"></i> Simpan';
+  }
+});
+
+// Show success notification
+function showSuccessNotification(message) {
+  const notification = document.createElement('div');
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #10b981;
+    color: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 2000;
+    animation: slideInRight 0.3s ease;
+  `;
+  notification.innerHTML = '<i class="fas fa-check-circle"></i> ' + message;
+  document.body.appendChild(notification);
+
+  setTimeout(() => {
+    notification.remove();
+  }, 3000);
+}
+
+// Event listeners
+btnTambahUser.addEventListener('click', openModalTambahUser);
+btnBatalUser.addEventListener('click', closeModalTambahUser);
+
+// Close modal when clicking outside (with confirmation)
+modalTambahUser.addEventListener('click', function(e) {
+  if(e.target === modalTambahUser) {
+    closeModalTambahUser();
+  }
+});
+
+// Prevent closing modal with Escape key if form has changes
+document.addEventListener('keydown', function(e) {
+  if(e.key === 'Escape' && modalTambahUser.classList.contains('active')) {
+    closeModalTambahUser();
+  }
+});
+
 // Labor filter dropdown
 document.getElementById('laborFilter').addEventListener('change', function() {
   const laborId = this.value;
@@ -598,15 +957,15 @@ document.getElementById('laborFilter').addEventListener('change', function() {
   }
 });
 
-// Load sidebar state from localStorage
-if(localStorage.getItem('sidebarCollapsed')==='true') {
-  document.body.classList.add('sidebar-collapsed');
-}
-document.addEventListener('click', function(e) {
-  if(window.innerWidth<=768 && !document.querySelector('.sidebar').contains(e.target) && !document.querySelector('.sidebar-toggle').contains(e.target) && !document.body.classList.contains('sidebar-collapsed')) {
-    document.body.classList.add('sidebar-collapsed');
+// Add CSS animation
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes slideInRight {
+    from { opacity: 0; transform: translateX(100px); }
+    to { opacity: 1; transform: translateX(0); }
   }
-});
+`;
+document.head.appendChild(style);
 </script>
 </body>
 </html>

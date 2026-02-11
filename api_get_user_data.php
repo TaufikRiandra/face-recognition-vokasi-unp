@@ -1,6 +1,6 @@
 <?php
 session_start();
-include '../../config/database.php';
+include 'koneksi.php';
 
 header('Content-Type: application/json');
 

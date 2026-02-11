@@ -1,0 +1,17 @@
+2026-02-11T08:45:47.081941Z 0 [System] [MY-015015] [Server] MySQL Server - start.
+2026-02-11T08:45:47.301035Z 0 [Warning] [MY-010097] [Server] Insecure configuration for --secure-file-priv: Current value does not restrict location of generated files. Consider setting it to a valid, non-empty path.
+2026-02-11T08:45:47.301155Z 0 [System] [MY-010116] [Server] C:\laragon\bin\mysql\mysql-8.4.3-winx64\bin\mysqld (mysqld 8.4.3) starting as process 11884
+2026-02-11T08:45:47.356324Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
+2026-02-11T08:45:48.469954Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
+2026-02-11T08:45:49.715803Z 0 [Warning] [MY-013829] [Server] Missing data directory for ICU regular expressions: C:\laragon\bin\mysql\mysql-8.4.3-winx64\lib\private\.
+2026-02-11T08:45:49.743341Z 0 [Warning] [MY-010068] [Server] CA certificate ca.pem is self signed.
+2026-02-11T08:45:49.744092Z 0 [System] [MY-013602] [Server] Channel mysql_main configured to support TLS. Encrypted connections are now supported for this channel.
+2026-02-11T08:45:49.752110Z 0 [ERROR] [MY-010262] [Server] Can't start server: Bind on TCP/IP port: Only one usage of each socket address (protocol/network address/port) is normally permitted. 
+2026-02-11T08:45:49.753849Z 0 [ERROR] [MY-010257] [Server] Do you already have another mysqld server running on port: 3306 ?
+2026-02-11T08:45:49.755161Z 0 [ERROR] [MY-010119] [Server] Aborting
+2026-02-11T08:45:50.932495Z 0 [System] [MY-010910] [Server] C:\laragon\bin\mysql\mysql-8.4.3-winx64\bin\mysqld: Shutdown complete (mysqld 8.4.3)  MySQL Community Server - GPL.
+2026-02-11T08:45:50.934397Z 0 [System] [MY-015016] [Server] MySQL Server - end.
+2026-02-11T08:46:48.402057Z 0 [System] [MY-015015] [Server] MySQL Server - start.
+2026-02-11T08:46:48.609799Z 0 [Warning] [MY-010097] [Server] Insecure configuration for --secure-file-priv: Current value does not restrict location of generated files. Consider setting it to a valid, non-empty path.
+2026-02-11T08:46:48.609928Z 0 [System] [MY-010116] [Server] C:\laragon\bin\mysql\mysql-8.4.3-winx64\bin\mysqld (mysqld 8.4.3) starting as process 7416
+2026-02-11T08:46:48.662232Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
