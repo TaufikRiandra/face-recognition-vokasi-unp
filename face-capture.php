@@ -1045,132 +1045,157 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
     const displaySize = { width: video.clientWidth, height: video.clientHeight };
     faceapi.matchDimensions(canvas, displaySize);
 
-    setInterval(async () => {
-      if(!isModelLoaded) return;
-      
-      // Apply CLAHE preprocessing
-      let detectionInput = video;
-      if(typeof cv !== 'undefined') {
-        try {
-          // Draw video frame ke preprocessing canvas
-          const ctx = preprocessCanvas.getContext('2d');
-          ctx.drawImage(video, 0, 0, preprocessCanvas.width, preprocessCanvas.height);
-          
-          // Konversi ke OpenCV Mat
-          let src = cv.imread(preprocessCanvas);
-          let gray = new cv.Mat();
-          cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-          
-          // Apply CLAHE (Contrast Limited Adaptive Histogram Equalization)
-          let clahe = cv.createCLAHE(2.0, new cv.Size(8, 8));
-          let dst = new cv.Mat();
-          clahe.apply(gray, dst);
-          
-          // Convert back ke canvas
-          cv.imshow(preprocessCanvas, dst);
-          detectionInput = preprocessCanvas;
-          
-          // Cleanup
-          src.delete();
-          gray.delete();
-          dst.delete();
-        } catch(e) {
-          console.warn('CLAHE preprocessing failed, using original video:', e);
-          detectionInput = video;
-        }
-      }
-      
-      const detections = await faceapi.detectAllFaces(detectionInput)
-        .withFaceLandmarks()
-        .withFaceDescriptors();
-      
-      const resizedDetections = faceapi.resizeResults(detections, displaySize);
-      
-      canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-      faceapi.draw.drawDetections(canvas, resizedDetections);
+    // OPTIMASI: Frame skipping & async handling untuk mencegah blocking
+    let isDetectionInProgress = false;
+    let frameCounter = 0;
+    const FRAME_SKIP = 2; // Proses setiap 3 frame (skip 2)
 
-      // Throttle status update - hanya update setiap 5 detik
-      const currentTime = Date.now();
-      const shouldUpdateStatus = (currentTime - lastStatusUpdateTime) >= STATUS_UPDATE_INTERVAL;
-
-      // Validasi: hanya 1 wajah yang boleh terdeteksi
-      if(resizedDetections.length > 1) {
-        // Multiple faces detected - jangan proses
-        currentDescriptor = null;
-        currentConfidence = 0;
-        currentUserData = null;
-        confidenceDisplay.style.display = 'none';
-        userInfoCard.classList.remove('show');
-        captureBtn.disabled = true;
-        if(shouldUpdateStatus) {
-          updateStatus('error', `⚠ Terdeteksi ${resizedDetections.length} wajah! Hanya 1 wajah yang diizinkan.`, false);
-          lastStatusUpdateTime = currentTime;
-        }
+    function runDetectionLoop() {
+      // Jika deteksi masih berjalan, skip frame ini
+      if(isDetectionInProgress || !isModelLoaded) {
+        setTimeout(runDetectionLoop, 16); // ~60fps
         return;
       }
 
-      if(resizedDetections.length === 1) {
-        const detection = resizedDetections[0];
-        currentDescriptor = detection.descriptor;
-        
-        // Catat waktu deteksi wajah
-        if(lastFaceDetectTime === 0) {
-          lastFaceDetectTime = currentTime;
-        }
-        
-        // THROTTLE: Bandingkan dengan database hanya setiap 500ms
-        if((currentTime - lastCompareTime) >= COMPARE_THROTTLE) {
-          compareWithDatabase(Array.from(detection.descriptor), currentTime);
-          lastCompareTime = currentTime;
-        }
-        
-        // AUTO-NOTIFY & INSTAN AUTO-SUBMIT ketika confidence > 30%
-        if(currentConfidence > 0.3 && selectedStatus && !autoSubmitScheduled) {
-          // Check apakah status valid (sesuai allowedStatus)
-          const isStatusValid = (selectedStatus === currentUserData?.allowedStatus);
-          
-          if(isStatusValid && !isAbsensiDisabled) {
-            // Status valid & absensi aktif - langsung auto-submit tanpa notification
-            autoSubmitScheduled = true;
-            setButtonLoading(true);
-            submitAttendance();
-            return;
-          } else {
-            // Status TIDAK valid - tampilkan error message setiap 2 detik
-            const currentTime = Date.now();
-            if((currentTime - lastErrorMessageTime) >= ERROR_MESSAGE_THROTTLE) {
-              const selectedStatusName = selectedStatus === 'IN' ? 'Masuk' : 'Keluar';
-              const allowedStatusName = selectedStatus === 'IN' ? 'Keluar' : 'Masuk';
-              const lastStatusText = selectedStatus === 'IN' ? 'sudah masuk' : 'belum masuk hari ini';
-              showToast(`❌ Error: Absen ${selectedStatusName} tidak diizinkan! Anda ${lastStatusText}. Silakan ${allowedStatusName}.`, 'error');
-              lastErrorMessageTime = currentTime;
-            }
-            return;
-          }
-        }
-        
-        if(shouldUpdateStatus) {
-          updateStatus('detected', 'Wajah terdeteksi! Tunggu hasil perbandingan...', true);
-          lastStatusUpdateTime = currentTime;
-        }
-      } else {
-        // Reset descriptor setelah 5 detik tanpa deteksi
-        if(lastFaceDetectTime > 0 && (currentTime - lastFaceDetectTime) >= DESCRIPTOR_RESET_INTERVAL) {
-          currentDescriptor = null;
-          currentConfidence = 0;
-          currentUserData = null;
-          confidenceDisplay.style.display = 'none';
-          userInfoCard.classList.remove('show');
-          lastFaceDetectTime = 0;
-        }
-        
-        captureBtn.disabled = true;
-        if(shouldUpdateStatus) {
-          updateStatus('searching', 'Mencari wajah... Pastikan wajah terlihat jelas.', true);
-          lastStatusUpdateTime = currentTime;
-        }
+      // Frame skipping: hanya proses frame tertentu
+      frameCounter++;
+      if(frameCounter % (FRAME_SKIP + 1) !== 0) {
+        setTimeout(runDetectionLoop, 16);
+        return;
       }
-    }, 100);
+
+      isDetectionInProgress = true;
+      
+      (async () => {
+        try {
+          // Apply CLAHE preprocessing
+          let detectionInput = video;
+          if(typeof cv !== 'undefined') {
+            try {
+              // Draw video frame ke preprocessing canvas
+              const ctx = preprocessCanvas.getContext('2d');
+              ctx.drawImage(video, 0, 0, preprocessCanvas.width, preprocessCanvas.height);
+              
+              // Konversi ke OpenCV Mat
+              let src = cv.imread(preprocessCanvas);
+              let gray = new cv.Mat();
+              cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+              
+              // Apply CLAHE (Contrast Limited Adaptive Histogram Equalization)
+              let clahe = cv.createCLAHE(2.0, new cv.Size(8, 8));
+              let dst = new cv.Mat();
+              clahe.apply(gray, dst);
+              
+              // Convert back ke canvas
+              cv.imshow(preprocessCanvas, dst);
+              detectionInput = preprocessCanvas;
+              
+              // Cleanup
+              src.delete();
+              gray.delete();
+              dst.delete();
+            } catch(e) {
+              console.warn('CLAHE preprocessing failed, using original video:', e);
+              detectionInput = video;
+            }
+          }
+          
+          const detections = await faceapi.detectAllFaces(detectionInput)
+            .withFaceLandmarks()
+            .withFaceDescriptors();
+          
+          const resizedDetections = faceapi.resizeResults(detections, displaySize);
+          
+          canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+          faceapi.draw.drawDetections(canvas, resizedDetections);
+
+          // Throttle status update - hanya update setiap 5 detik
+          const currentTime = Date.now();
+          const shouldUpdateStatus = (currentTime - lastStatusUpdateTime) >= STATUS_UPDATE_INTERVAL;
+
+          // Validasi: hanya 1 wajah yang boleh terdeteksi
+          if(resizedDetections.length > 1) {
+            // Multiple faces detected - jangan proses
+            currentDescriptor = null;
+            currentConfidence = 0;
+            currentUserData = null;
+            confidenceDisplay.style.display = 'none';
+            userInfoCard.classList.remove('show');
+            captureBtn.disabled = true;
+            if(shouldUpdateStatus) {
+              updateStatus('error', `⚠ Terdeteksi ${resizedDetections.length} wajah! Hanya 1 wajah yang diizinkan.`, false);
+              lastStatusUpdateTime = currentTime;
+            }
+          } else if(resizedDetections.length === 1) {
+            const detection = resizedDetections[0];
+            currentDescriptor = detection.descriptor;
+            
+            // Catat waktu deteksi wajah
+            if(lastFaceDetectTime === 0) {
+              lastFaceDetectTime = currentTime;
+            }
+            
+            // THROTTLE: Bandingkan dengan database hanya setiap 500ms
+            if((currentTime - lastCompareTime) >= COMPARE_THROTTLE) {
+              compareWithDatabase(Array.from(detection.descriptor), currentTime);
+              lastCompareTime = currentTime;
+            }
+            
+            // AUTO-NOTIFY & INSTAN AUTO-SUBMIT ketika confidence > 30%
+            if(currentConfidence > 0.3 && selectedStatus && !autoSubmitScheduled) {
+              // Check apakah status valid (sesuai allowedStatus)
+              const isStatusValid = (selectedStatus === currentUserData?.allowedStatus);
+              
+              if(isStatusValid && !isAbsensiDisabled) {
+                // Status valid & absensi aktif - langsung auto-submit tanpa notification
+                autoSubmitScheduled = true;
+                setButtonLoading(true);
+                submitAttendance();
+              } else {
+                // Status TIDAK valid - tampilkan error message setiap 2 detik
+                const currentTime = Date.now();
+                if((currentTime - lastErrorMessageTime) >= ERROR_MESSAGE_THROTTLE) {
+                  const selectedStatusName = selectedStatus === 'IN' ? 'Masuk' : 'Keluar';
+                  const allowedStatusName = selectedStatus === 'IN' ? 'Keluar' : 'Masuk';
+                  const lastStatusText = selectedStatus === 'IN' ? 'sudah masuk' : 'belum masuk hari ini';
+                  showToast(`❌ Error: Absen ${selectedStatusName} tidak diizinkan! Anda ${lastStatusText}. Silakan ${allowedStatusName}.`, 'error');
+                  lastErrorMessageTime = currentTime;
+                }
+              }
+            } else if(shouldUpdateStatus) {
+              updateStatus('detected', 'Wajah terdeteksi! Tunggu hasil perbandingan...', true);
+              lastStatusUpdateTime = currentTime;
+            }
+          } else {
+            // Reset descriptor setelah 5 detik tanpa deteksi
+            if(lastFaceDetectTime > 0 && (currentTime - lastFaceDetectTime) >= DESCRIPTOR_RESET_INTERVAL) {
+              currentDescriptor = null;
+              currentConfidence = 0;
+              currentUserData = null;
+              confidenceDisplay.style.display = 'none';
+              userInfoCard.classList.remove('show');
+              lastFaceDetectTime = 0;
+            }
+            
+            captureBtn.disabled = true;
+            if(shouldUpdateStatus) {
+              updateStatus('searching', 'Mencari wajah... Pastikan wajah terlihat jelas.', true);
+              lastStatusUpdateTime = currentTime;
+            }
+          }
+        } catch(err) {
+          console.error('Detection error:', err);
+        } finally {
+          // Tandai deteksi selesai agar frame berikutnya bisa diproses
+          isDetectionInProgress = false;
+          // Jadwalkan deteksi loop berikutnya
+          setTimeout(runDetectionLoop, 16); // ~60fps target
+        }
+      })();
+    }
+
+    // Mulai detection loop
+    runDetectionLoop();
   });
 
   // Perbandingan dengan Database
@@ -1536,12 +1561,21 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
   // Capture Multiple Frames untuk Registration (Simpan 5 Embedding Terpisah)
   let frameCount = 0;
   const FRAMES_TO_CAPTURE = 5; // Capture 5 frames - simpan terpisah bukan rata-rata
+  let registrationPreprocessCanvas = null; // Canvas untuk CLAHE preprocessing saat registrasi
 
   function startMultipleFrameCapture(userId) {
     document.getElementById('existingStudentModal').classList.remove('show');
     isCapturingMultipleFrames = true;
     multipleEmbeddings = [];
     frameCount = 0;
+
+    // Create preprocessing canvas untuk registration
+    const video = document.getElementById('video');
+    registrationPreprocessCanvas = document.createElement('canvas');
+    registrationPreprocessCanvas.width = video.clientWidth;
+    registrationPreprocessCanvas.height = video.clientHeight;
+    registrationPreprocessCanvas.style.display = 'none';
+    document.body.appendChild(registrationPreprocessCanvas);
 
     // Tampilkan registration status section
     document.getElementById('registrationStatusSection').style.display = 'block';
@@ -1600,9 +1634,43 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
       return;
     }
 
-    // Capture current frame jika ada deteksi wajah
+    // Capture current frame dengan CLAHE preprocessing
     const video = document.getElementById('video');
-    faceapi.detectSingleFace(video)
+    let detectionInput = video; // Default ke video tanpa preprocessing
+
+    // Apply CLAHE preprocessing jika OpenCV available
+    if(typeof cv !== 'undefined' && registrationPreprocessCanvas) {
+      try {
+        // Draw video frame ke preprocessing canvas
+        const ctx = registrationPreprocessCanvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, registrationPreprocessCanvas.width, registrationPreprocessCanvas.height);
+        
+        // Konversi ke OpenCV Mat
+        let src = cv.imread(registrationPreprocessCanvas);
+        let gray = new cv.Mat();
+        cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+        
+        // Apply CLAHE (Contrast Limited Adaptive Histogram Equalization)
+        let clahe = cv.createCLAHE(2.0, new cv.Size(8, 8));
+        let dst = new cv.Mat();
+        clahe.apply(gray, dst);
+        
+        // Convert back ke canvas
+        cv.imshow(registrationPreprocessCanvas, dst);
+        detectionInput = registrationPreprocessCanvas; // Gunakan canvas yang sudah dipreprocess
+        
+        // Cleanup
+        src.delete();
+        gray.delete();
+        dst.delete();
+      } catch(e) {
+        console.warn('CLAHE preprocessing failed during registration, using original video:', e);
+        detectionInput = video; // Fallback ke video asli
+      }
+    }
+
+    // Deteksi wajah dari input yang sudah dipreprocess
+    faceapi.detectSingleFace(detectionInput)
       .withFaceLandmarks()
       .withFaceDescriptor()
       .then(detection => {
