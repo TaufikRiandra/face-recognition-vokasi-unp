@@ -1,6 +1,6 @@
 <?php
 session_start();
-include '../koneksi.php';
+include '../backend/koneksi.php';
 
 // Block access to register.php from admin context
 if(isset($_GET['redirect']) && strpos($_GET['redirect'], 'register') !== false) {

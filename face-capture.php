@@ -1145,8 +1145,8 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
               lastCompareTime = currentTime;
             }
             
-            // AUTO-NOTIFY & INSTAN AUTO-SUBMIT ketika confidence > 50%
-            if(currentConfidence > 0.5 && selectedStatus && !autoSubmitScheduled) {
+            // AUTO-NOTIFY & INSTAN AUTO-SUBMIT ketika confidence > 40%
+            if(currentConfidence > 0.4 && selectedStatus && !autoSubmitScheduled) {
               // Check apakah status valid (sesuai allowedStatus)
               const isStatusValid = (selectedStatus === currentUserData?.allowedStatus);
               
@@ -1344,7 +1344,7 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
     formData.append('confidence', currentConfidence);
     formData.append('user_id', currentUserData?.id || null);
 
-    fetch('process_attendance.php', {
+    fetch('backend/process_attendance.php', {
       method: 'POST',
       body: formData
     })
@@ -1356,8 +1356,8 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
         const statusText = selectedStatus === 'IN' ? 'Masuk' : 'Keluar';
         showToast(`✓ Absen ${statusText} berhasil! - ${currentUserData.nama}`, 'success');
         
-        // Reset descriptor setelah 7000ms untuk ready next scan
-        resetCaptureWithDelay(7000);
+        // Reset descriptor setelah 4s untuk ready next scan
+        resetCaptureWithDelay(4000);
       } else {
         showToast('❌ Gagal menyimpan absensi: ' + data.message, 'error');
       }
@@ -1370,7 +1370,7 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
   }
 
   // Reset Capture with Delay
-  function resetCaptureWithDelay(delay = 7000) {
+  function resetCaptureWithDelay(delay = 4000) {
     setTimeout(() => {
       resetCapture();
     }, delay);
@@ -1757,7 +1757,7 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
     formData.append('embeddings', JSON.stringify(embeddings)); // Array of 5 embeddings
     formData.append('embedding_count', embeddings.length);
 
-    fetch('process_attendance.php', {
+    fetch('backend/process_attendance.php', {
       method: 'POST',
       body: formData
     })

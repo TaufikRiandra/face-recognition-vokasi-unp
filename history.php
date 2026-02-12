@@ -7,7 +7,7 @@ if(!isset($_GET['ajax']) || $_GET['ajax'] != '1') {
 // AJAX Request Handler
 if(isset($_GET['ajax']) && $_GET['ajax'] == '1') {
   // Include connection only (skip header output)
-  include 'koneksi.php';
+  include 'backend/koneksi.php';
   header('Content-Type: application/json');
   
   // Get filter parameters
