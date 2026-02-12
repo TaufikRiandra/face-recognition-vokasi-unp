@@ -18,7 +18,7 @@ if($user_id < 1) {
 }
 
 // Get user data
-$query = "SELECT id, nama, nim, email, role FROM users WHERE id = $user_id";
+$query = "SELECT id, nama, nim, role FROM users WHERE id = $user_id";
 $result = mysqli_query($conn, $query);
 
 if(!$result || mysqli_num_rows($result) === 0) {
@@ -65,7 +65,6 @@ echo json_encode([
     'id' => $user['id'],
     'nama' => $user['nama'],
     'nim' => $user['nim'],
-    'email' => $user['email'],
     'role' => $user['role'],
     'lastStatus' => $lastStatus,
     'lastLaborId' => $lastLaborId,

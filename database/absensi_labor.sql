@@ -64,10 +64,6 @@ CREATE TABLE IF NOT EXISTS `face_embeddings` (
 CREATE TABLE IF NOT EXISTS `labor` (
   `id` int NOT NULL AUTO_INCREMENT,
   `nama` varchar(191) COLLATE utf8mb4_general_ci NOT NULL,
-  `deskripsi` text COLLATE utf8mb4_general_ci,
-  `icon` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `image` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `color` varchar(20) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -77,11 +73,8 @@ CREATE TABLE IF NOT EXISTS `labor` (
 -- Dumping structure for table aplikasi_labor.users
 CREATE TABLE IF NOT EXISTS `users` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `email` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `nama` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `nim` varchar(20) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `password` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `foto` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `is_active` tinyint(1) DEFAULT '1',
   `role` varchar(20) COLLATE utf8mb4_general_ci DEFAULT 'mahasiswa',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,

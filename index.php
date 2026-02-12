@@ -6,6 +6,9 @@ $today = date('Y-m-d');
 
 // Get all labor for dropdown
 $labor_query = mysqli_query($conn, "SELECT id, nama FROM labor ORDER BY nama");
+if(!$labor_query) {
+  die("Error loading labor list: " . mysqli_error($conn));
+}
 $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
 
 // Get selected labor filter from GET parameter
@@ -647,6 +650,9 @@ $total_unik = mysqli_fetch_assoc(mysqli_query($conn, $unique_visitors_query))['t
         <button id="btnTambahUser" class="btn btn-primary" style="white-space: nowrap;">
           <i class="fas fa-user-plus"></i> Tambah User
         </button>
+        <a href="manage_users.php" class="btn btn-primary" style="white-space: nowrap;">
+          <i class="fas fa-users-cog"></i> Kelola User
+        </a>
         <a href="history.php" class="btn btn-primary" style="white-space: nowrap;">
           <i class="fas fa-history"></i> Riwayat
         </a>
@@ -739,12 +745,6 @@ $total_unik = mysqli_fetch_assoc(mysqli_query($conn, $unique_visitors_query))['t
         <div class="form-error" id="errorNIM"></div>
       </div>
 
-      <div class="modal-form-group">
-        <label for="inputEmail">Email</label>
-        <input type="email" id="inputEmail" name="email" placeholder="Masukkan email" required>
-        <div class="form-error" id="errorEmail"></div>
-      </div>
-
       <div class="modal-footer">
         <button type="button" id="btnBatalUser" class="modal-btn modal-btn-secondary">
           <i class="fas fa-times"></i> Batal
@@ -768,7 +768,6 @@ const btnBatalUser = document.getElementById('btnBatalUser');
 const btnSimpanUser = document.getElementById('btnSimpanUser');
 const inputNama = document.getElementById('inputNama');
 const inputNIM = document.getElementById('inputNIM');
-const inputEmail = document.getElementById('inputEmail');
 
 let formHasChanged = false;
 let isSubmitting = false;
@@ -776,7 +775,7 @@ let isSubmitting = false;
 // Track form changes
 function setupFormChangeTracking() {
   formTambahUser.addEventListener('input', function() {
-    formHasChanged = (inputNama.value.trim() || inputNIM.value.trim() || inputEmail.value.trim());
+    formHasChanged = (inputNama.value.trim() || inputNIM.value.trim());
   });
 }
 
@@ -809,8 +808,6 @@ function clearAllErrors() {
   document.getElementById('errorNama').classList.remove('show');
   document.getElementById('errorNIM').textContent = '';
   document.getElementById('errorNIM').classList.remove('show');
-  document.getElementById('errorEmail').textContent = '';
-  document.getElementById('errorEmail').classList.remove('show');
 }
 
 // Validate form
@@ -820,7 +817,6 @@ function validateForm() {
 
   const nama = inputNama.value.trim();
   const nim = inputNIM.value.trim();
-  const email = inputEmail.value.trim();
 
   if(!nama) {
     document.getElementById('errorNama').textContent = 'Nama tidak boleh kosong';
@@ -831,16 +827,6 @@ function validateForm() {
   if(!nim) {
     document.getElementById('errorNIM').textContent = 'NIM tidak boleh kosong';
     document.getElementById('errorNIM').classList.add('show');
-    isValid = false;
-  }
-
-  if(!email) {
-    document.getElementById('errorEmail').textContent = 'Email tidak boleh kosong';
-    document.getElementById('errorEmail').classList.add('show');
-    isValid = false;
-  } else if(!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-    document.getElementById('errorEmail').textContent = 'Format email tidak valid';
-    document.getElementById('errorEmail').classList.add('show');
     isValid = false;
   }
 
@@ -868,25 +854,23 @@ formTambahUser.addEventListener('submit', async function(e) {
     const data = await response.json();
 
     if(data.success) {
-      // Don't show notification on success, just close modal
+      // Reset form and close modal
       formHasChanged = false;
       closeModalTambahUser();
+      clearAllErrors();
       
-      // Show success message using toast or notification
+      // Show success notification
       showSuccessNotification(data.message);
       
-      // Reload page after 1 second
-      setTimeout(() => {
-        location.reload();
-      }, 1000);
+      // Reset button
+      btnSimpanUser.disabled = false;
+      btnSimpanUser.innerHTML = '<i class="fas fa-save"></i> Simpan';
+      isSubmitting = false;
     } else {
       // Show error
       if(data.error.includes('NIM')) {
         document.getElementById('errorNIM').textContent = data.error;
         document.getElementById('errorNIM').classList.add('show');
-      } else if(data.error.includes('Email')) {
-        document.getElementById('errorEmail').textContent = data.error;
-        document.getElementById('errorEmail').classList.add('show');
       } else {
         alert('Error: ' + data.error);
       }

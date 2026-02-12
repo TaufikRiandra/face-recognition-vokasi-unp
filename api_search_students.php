@@ -25,8 +25,7 @@ $sql = "
   SELECT 
     id, 
     nama, 
-    nim, 
-    email
+    nim
   FROM users 
   WHERE role = 'mahasiswa' 
     AND (nama LIKE '%$query%' OR nim LIKE '%$query%')
@@ -46,8 +45,7 @@ while($row = mysqli_fetch_assoc($result)) {
   $students[] = [
     'id' => $row['id'],
     'nama' => $row['nama'],
-    'nim' => $row['nim'],
-    'email' => $row['email']
+    'nim' => $row['nim']
   ];
 }
 

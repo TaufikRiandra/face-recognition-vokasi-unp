@@ -21,17 +21,10 @@ header('Content-Type: application/json');
 // Get POST data
 $nama = isset($_POST['nama']) ? mysqli_real_escape_string($conn, trim($_POST['nama'])) : '';
 $nim = isset($_POST['nim']) ? mysqli_real_escape_string($conn, trim($_POST['nim'])) : '';
-$email = isset($_POST['email']) ? mysqli_real_escape_string($conn, trim($_POST['email'])) : '';
 
 // Validate input
-if(empty($nama) || empty($nim) || empty($email)) {
+if(empty($nama) || empty($nim)) {
   echo json_encode(['success' => false, 'error' => 'Semua field harus diisi!']);
-  exit;
-}
-
-// Validate email format
-if(!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-  echo json_encode(['success' => false, 'error' => 'Format email tidak valid!']);
   exit;
 }
 
@@ -42,15 +35,8 @@ if(mysqli_num_rows($check_nim) > 0) {
   exit;
 }
 
-// Check if Email already exists
-$check_email = mysqli_query($conn, "SELECT id FROM users WHERE email='$email' LIMIT 1");
-if(mysqli_num_rows($check_email) > 0) {
-  echo json_encode(['success' => false, 'error' => 'Email sudah terdaftar!']);
-  exit;
-}
-
 // Insert new user
-$insert_q = mysqli_query($conn, "INSERT INTO users (nama, nim, email) VALUES ('$nama', '$nim', '$email')");
+$insert_q = mysqli_query($conn, "INSERT INTO users (nama, nim) VALUES ('$nama', '$nim')");
 if($insert_q) {
   $new_user_id = mysqli_insert_id($conn);
   echo json_encode([

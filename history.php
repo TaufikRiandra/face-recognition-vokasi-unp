@@ -49,7 +49,13 @@ if(isset($_GET['ajax']) && $_GET['ajax'] == '1') {
 
   $result = mysqli_query($conn, $query);
   if(!$result) {
-    echo json_encode(['success' => false, 'error' => mysqli_error($conn)]);
+    $error_msg = mysqli_error($conn);
+    
+    // Debug: Log the error
+    error_log("History AJAX Error: " . $error_msg);
+    error_log("Query: " . $query);
+    
+    echo json_encode(['success' => false, 'error' => $error_msg]);
     exit;
   }
   
@@ -98,6 +104,9 @@ if(isset($_GET['ajax']) && $_GET['ajax'] == '1') {
 
 // Get all labor for dropdown
 $labor_query = mysqli_query($conn, "SELECT id, nama FROM labor ORDER BY nama");
+if(!$labor_query) {
+  die("Error loading labor list: " . mysqli_error($conn));
+}
 $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
 ?>
 
@@ -530,7 +539,9 @@ function performSearch() {
       if(data.success) {
         container.innerHTML = data.html;
       } else {
-        container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Terjadi kesalahan</p><p style="font-size: 14px; font-weight: 400; margin: 0;">Error: ' + htmlEscape(data.error) + '</p></div>';
+        // Show detailed error for debugging
+        console.error('Error response:', data);
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Terjadi kesalahan</p><p style="font-size: 14px; font-weight: 400; margin: 0; white-space: pre-wrap; text-align: left; font-family: monospace; color: #ef4444;">' + htmlEscape(data.error) + '</p></div>';
       }
     })
     .catch(error => {

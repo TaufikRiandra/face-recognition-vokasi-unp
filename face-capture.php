@@ -15,6 +15,7 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<script async src="https://docs.opencv.org/4.6.0/opencv.js"></script>
 
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -889,10 +890,6 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
         <div class="user-detail-label"><i class="fas fa-id-card"></i> NIM</div>
         <div class="user-detail-value" id="userNimDisplay">-</div>
       </div>
-      <div class="user-detail-row">
-        <div class="user-detail-label"><i class="fas fa-envelope"></i> Email</div>
-        <div class="user-detail-value" id="userEmailDisplay">-</div>
-      </div>
     </div>
 
     <div class="button-group">
@@ -1038,13 +1035,52 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
     canvas.style.top = '0';
     canvas.style.left = '0';
     
+    // Create preprocessing canvas untuk CLAHE
+    const preprocessCanvas = document.createElement('canvas');
+    preprocessCanvas.width = video.clientWidth;
+    preprocessCanvas.height = video.clientHeight;
+    preprocessCanvas.style.display = 'none';
+    document.body.appendChild(preprocessCanvas);
+    
     const displaySize = { width: video.clientWidth, height: video.clientHeight };
     faceapi.matchDimensions(canvas, displaySize);
 
     setInterval(async () => {
       if(!isModelLoaded) return;
       
-      const detections = await faceapi.detectAllFaces(video)
+      // Apply CLAHE preprocessing
+      let detectionInput = video;
+      if(typeof cv !== 'undefined') {
+        try {
+          // Draw video frame ke preprocessing canvas
+          const ctx = preprocessCanvas.getContext('2d');
+          ctx.drawImage(video, 0, 0, preprocessCanvas.width, preprocessCanvas.height);
+          
+          // Konversi ke OpenCV Mat
+          let src = cv.imread(preprocessCanvas);
+          let gray = new cv.Mat();
+          cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+          
+          // Apply CLAHE (Contrast Limited Adaptive Histogram Equalization)
+          let clahe = cv.createCLAHE(2.0, new cv.Size(8, 8));
+          let dst = new cv.Mat();
+          clahe.apply(gray, dst);
+          
+          // Convert back ke canvas
+          cv.imshow(preprocessCanvas, dst);
+          detectionInput = preprocessCanvas;
+          
+          // Cleanup
+          src.delete();
+          gray.delete();
+          dst.delete();
+        } catch(e) {
+          console.warn('CLAHE preprocessing failed, using original video:', e);
+          detectionInput = video;
+        }
+      }
+      
+      const detections = await faceapi.detectAllFaces(detectionInput)
         .withFaceLandmarks()
         .withFaceDescriptors();
       
@@ -1208,7 +1244,6 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
     document.getElementById('userAvatarLarge').textContent = initials;
     document.getElementById('userNameDisplay').textContent = user.nama;
     document.getElementById('userNimDisplay').textContent = user.nim || '-';
-    document.getElementById('userEmailDisplay').textContent = user.email || '-';
     
     userInfoCard.classList.add('show');
   }
