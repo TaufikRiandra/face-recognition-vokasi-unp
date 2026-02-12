@@ -672,7 +672,7 @@ function searchUsers(query) {
 
   resultContainer.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i><p style="margin-top: 15px;">Mencari...</p></div>';
 
-  fetch('api_get_users.php?' + params.toString())
+  fetch('backend/api_get_users.php?' + params.toString())
     .then(response => response.json())
     .then(data => {
       if(data.success) {
@@ -817,7 +817,7 @@ function deleteUser(userId) {
   const formData = new FormData();
   formData.append('user_id', userId);
 
-  fetch('api_delete_user.php', {
+  fetch('backend/api_delete_user.php', {
     method: 'POST',
     body: formData
   })
@@ -877,7 +877,7 @@ formEditUser.addEventListener('submit', async function(e) {
   formData.append('nim', nim);
 
   try {
-    const response = await fetch('api_update_user.php', {
+    const response = await fetch('backend/api_update_user.php', {
       method: 'POST',
       body: formData
     });
@@ -940,7 +940,7 @@ function showSuccessNotification(message) {
 // Load all users for pagination
 async function loadAllUsers() {
   try {
-    const response = await fetch('api_get_users.php?search=');
+    const response = await fetch('backend/api_get_users.php?search=');
     const data = await response.json();
     
     if(data.success) {

@@ -10,7 +10,7 @@ if(!isset($_SESSION['admin_id'])){
   exit;
 }
 
-include 'koneksi.php';
+include 'backend/koneksi.php';
 
 $id = $_SESSION['admin_id'];
 $admin_q = mysqli_query($conn, "SELECT * FROM admin WHERE id=$id");

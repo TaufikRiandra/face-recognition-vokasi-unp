@@ -1205,7 +1205,7 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
   // Perbandingan dengan Database
   function compareWithDatabase(descriptor, currentTime) {
     // Kirim ke server untuk perbandingan
-    fetch('api_face_compare.php', {
+    fetch('backend/api_face_compare.php', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1221,7 +1221,7 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
         updateConfidenceDisplay(data.confidence);
         
         // Fetch user data dan tampilkan
-        fetch('api_get_user_data.php', {
+        fetch('backend/api_get_user_data.php', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -1517,7 +1517,7 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
     container.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner"></i> Mencari...</div>';
 
     // Fetch students dari server
-    fetch('api_search_students.php', {
+    fetch('backend/api_search_students.php', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

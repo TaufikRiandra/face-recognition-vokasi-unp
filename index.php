@@ -861,7 +861,7 @@ formTambahUser.addEventListener('submit', async function(e) {
   const formData = new FormData(formTambahUser);
 
   try {
-    const response = await fetch('api_add_user.php', {
+    const response = await fetch('backend/api_add_user.php', {
       method: 'POST',
       body: formData
     });
