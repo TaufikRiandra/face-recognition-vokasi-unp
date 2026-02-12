@@ -79,12 +79,15 @@ else if($action === 'save_embedding') {
     exit;
   }
 
-  // Check if user exists
-  $user_check = mysqli_query($conn, "SELECT id FROM users WHERE id = $user_id");
+  // Check if user exists dan ambil nama user
+  $user_check = mysqli_query($conn, "SELECT id, nama FROM users WHERE id = $user_id");
   if(mysqli_num_rows($user_check) === 0) {
     echo json_encode(['status' => 'error', 'message' => 'Mahasiswa tidak ditemukan']);
     exit;
   }
+  $user_data = mysqli_fetch_assoc($user_check);
+  $user_nama = $user_data['nama'];
+  $user_nama_escaped = mysqli_real_escape_string($conn, $user_nama);
 
   // Save to face_embeddings table
   $embedding_escaped = mysqli_real_escape_string($conn, $embedding);
@@ -96,10 +99,10 @@ else if($action === 'save_embedding') {
   if(mysqli_query($conn, $insert_query)) {
     $embedding_id = mysqli_insert_id($conn);
 
-    // Also save to attendance_logs
+    // Also save to attendance_logs dengan stored_user_nama
     $attendance_query = "
-      INSERT INTO attendance_logs (user_id, labor_id, status, confidence_score, created_at)
-      VALUES ($user_id, $labor_id, '$status', $confidence, NOW())
+      INSERT INTO attendance_logs (user_id, labor_id, status, confidence_score, stored_user_nama, created_at)
+      VALUES ($user_id, $labor_id, '$status', $confidence, '$user_nama_escaped', NOW())
     ";
 
     if(mysqli_query($conn, $attendance_query)) {
@@ -134,12 +137,15 @@ else if($action === 'submit_attendance') {
     exit;
   }
 
-  // Check if user exists
-  $user_check = mysqli_query($conn, "SELECT id FROM users WHERE id = $user_id");
+  // Check if user exists dan ambil nama user
+  $user_check = mysqli_query($conn, "SELECT id, nama FROM users WHERE id = $user_id");
   if(mysqli_num_rows($user_check) === 0) {
     echo json_encode(['status' => 'error', 'message' => 'Mahasiswa tidak ditemukan']);
     exit;
   }
+  $user_data = mysqli_fetch_assoc($user_check);
+  $user_nama = $user_data['nama'];
+  $user_nama_escaped = mysqli_real_escape_string($conn, $user_nama);
 
   // ENFORCE: Validasi status transition - cek last status TODAY
   $today = date('Y-m-d');
@@ -173,10 +179,10 @@ else if($action === 'submit_attendance') {
     exit;
   }
 
-  // Insert attendance log
+  // Insert attendance log dengan stored_user_nama
   $attendance_query = "
-    INSERT INTO attendance_logs (user_id, labor_id, status, confidence_score, created_at)
-    VALUES ($user_id, $labor_id, '$status', $confidence, NOW())
+    INSERT INTO attendance_logs (user_id, labor_id, status, confidence_score, stored_user_nama, created_at)
+    VALUES ($user_id, $labor_id, '$status', $confidence, '$user_nama_escaped', NOW())
   ";
 
   if(mysqli_query($conn, $attendance_query)) {

@@ -2,7 +2,12 @@
 include 'header.php';
 
 // Get all labor for dropdown
-$labor_query = mysqli_query($conn, "SELECT id, nama FROM labor ORDER BY nama");
+// $labor_query = mysqli_query($conn, "SELECT id, nama FROM labor ORDER BY nama");
+// $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
+
+// Tentukan labor yang ingin digunakan (bisa dirubah)
+$default_labor_id = 3; // Ubah angka ini untuk ganti labor
+$labor_query = mysqli_query($conn, "SELECT id, nama FROM labor WHERE id = $default_labor_id");
 $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
 ?>
 
@@ -822,10 +827,9 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
     <div class="controls-section">
       <div class="control-group">
         <label class="control-label"><i class="fas fa-building"></i> Pilih Labor</label>
-        <select id="laborSelect" class="form-select">
-          <option value="">-- Pilih Labor --</option>
+        <select id="laborSelect" class="form-select" disabled>
           <?php foreach($labor_list as $labor): ?>
-            <option value="<?= $labor['id'] ?>"><?= htmlspecialchars($labor['nama']) ?></option>
+            <option value="<?= $labor['id'] ?>" selected><?= htmlspecialchars($labor['nama']) ?></option>
           <?php endforeach; ?>
         </select>
       </div>
@@ -1141,8 +1145,8 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
               lastCompareTime = currentTime;
             }
             
-            // AUTO-NOTIFY & INSTAN AUTO-SUBMIT ketika confidence > 30%
-            if(currentConfidence > 0.3 && selectedStatus && !autoSubmitScheduled) {
+            // AUTO-NOTIFY & INSTAN AUTO-SUBMIT ketika confidence > 50%
+            if(currentConfidence > 0.5 && selectedStatus && !autoSubmitScheduled) {
               // Check apakah status valid (sesuai allowedStatus)
               const isStatusValid = (selectedStatus === currentUserData?.allowedStatus);
               
@@ -1458,10 +1462,28 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
     }, 4000);
   }
 
-  // Load labor selection
+//
+
+  // Load labor selection - set default automatically
+  document.addEventListener('DOMContentLoaded', function() {
+    const laborSelect = document.getElementById('laborSelect');
+    if(laborSelect.options.length > 0) {
+      selectedLabor = laborSelect.options[0].value;
+      laborSelect.value = selectedLabor;
+    }
+  });
+
+  // Keep change listener for manual changes
   document.getElementById('laborSelect').addEventListener('change', function() {
     selectedLabor = this.value;
   });
+
+  // Load labor selection
+  //document.getElementById('laborSelect').addEventListener('change', function() {
+  //  selectedLabor = this.value;
+  //});
+
+//
 
   // Existing Student Modal Functions
   function showExistingStudentModal() {

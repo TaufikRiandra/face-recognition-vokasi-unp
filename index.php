@@ -5,14 +5,25 @@ include 'header.php';
 $today = date('Y-m-d');
 
 // Get all labor for dropdown
-$labor_query = mysqli_query($conn, "SELECT id, nama FROM labor ORDER BY nama");
+//$labor_query = mysqli_query($conn, "SELECT id, nama FROM labor ORDER BY nama");
+//if(!$labor_query) {
+//  die("Error loading labor list: " . mysqli_error($conn));
+//}
+//$labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
+
+// Tentukan labor yang ingin digunakan
+$default_labor_id = 3; // Ubah ke ID labor yang ingin
+$labor_query = mysqli_query($conn, "SELECT id, nama FROM labor WHERE id = $default_labor_id");
 if(!$labor_query) {
   die("Error loading labor list: " . mysqli_error($conn));
 }
 $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
 
 // Get selected labor filter from GET parameter
-$selected_labor = isset($_GET['labor']) ? intval($_GET['labor']) : 0;
+//$selected_labor = isset($_GET['labor']) ? intval($_GET['labor']) : 0;
+
+// Force gunakan labor spesifik (jangan dari GET parameter)
+$selected_labor = 3; // Ubah ke ID labor yang ingin
 
 // Build query with optional labor filter (with table alias for main query)
 $where_clause = "DATE(al.created_at) = '$today'";
@@ -35,6 +46,7 @@ $query = "
     al.status,
     al.confidence_score,
     al.created_at,
+    al.stored_user_nama,
     u.nama as user_nama,
     u.nim,
     l.nama as labor_nama
@@ -639,10 +651,9 @@ $total_unik = mysqli_fetch_assoc(mysqli_query($conn, $unique_visitors_query))['t
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px;">
       <h4 style="margin: 0;"><i class="fas fa-list"></i> Daftar Absensi Hari Ini</h4>
       <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
-        <select id="laborFilter" class="form-select" style="width: auto; min-width: 200px;">
-          <option value="0">Semua Labor</option>
+        <select id="laborFilter" class="form-select" style="width: auto; min-width: 200px;" disabled>
           <?php foreach($labor_list as $labor): ?>
-            <option value="<?= $labor['id'] ?>" <?= $selected_labor == $labor['id'] ? 'selected' : '' ?>>
+            <option value="<?= $labor['id'] ?>" selected>
               <?= htmlspecialchars($labor['nama']) ?>
             </option>
           <?php endforeach; ?>
@@ -680,7 +691,11 @@ $total_unik = mysqli_fetch_assoc(mysqli_query($conn, $unique_visitors_query))['t
                 <td class="text-center"><?= $index + 1 ?></td>
                 <td>
                   <div class="visitor-name">
-                    <?= htmlspecialchars($log['user_nama']) . ' (' . htmlspecialchars($log['nim']) . ')' ?>
+                    <?php if($log['user_nama']): ?>
+                      <?= htmlspecialchars($log['user_nama']) . ' (' . htmlspecialchars($log['nim']) . ')' ?>
+                    <?php else: ?>
+                      <span style="color: #ef4444; font-style: italic;">deleted user (<?= htmlspecialchars($log['stored_user_nama'] ?? 'Unknown') ?>)</span>
+                    <?php endif; ?>
                   </div>
                   <div class="visitor-type">
                     <i class="fas fa-graduation-cap"></i> Mahasiswa
@@ -931,15 +946,15 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
-// Labor filter dropdown
-document.getElementById('laborFilter').addEventListener('change', function() {
-  const laborId = this.value;
-  if(laborId === '0') {
-    window.location.href = window.location.pathname;
-  } else {
-    window.location.href = window.location.pathname + '?labor=' + laborId;
-  }
-});
+// Labor filter dropdown - DISABLED (labor sudah fixed)
+// document.getElementById('laborFilter').addEventListener('change', function() {
+//   const laborId = this.value;
+//   if(laborId === '0') {
+//     window.location.href = window.location.pathname;
+//   } else {
+//     window.location.href = window.location.pathname + '?labor=' + laborId;
+//   }
+// });
 
 // Add CSS animation
 const style = document.createElement('style');

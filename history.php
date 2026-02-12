@@ -1,13 +1,21 @@
 <?php
-include 'header.php';
+// Check if this is an AJAX request FIRST (jangan include header untuk AJAX)
+if(!isset($_GET['ajax']) || $_GET['ajax'] != '1') {
+  include 'header.php';
+}
 
-// Check if this is an AJAX request
+// AJAX Request Handler
 if(isset($_GET['ajax']) && $_GET['ajax'] == '1') {
+  // Include connection only (skip header output)
+  include 'koneksi.php';
   header('Content-Type: application/json');
   
   // Get filter parameters
   $search = isset($_GET['search']) ? mysqli_real_escape_string($conn, $_GET['search']) : '';
-  $selected_labor = isset($_GET['labor']) ? intval($_GET['labor']) : 0;
+
+  $selected_labor = isset($_GET['labor']) ? intval($_GET['labor']) : 3; // ubah Default labor
+
+  //$selected_labor = isset($_GET['labor']) ? intval($_GET['labor']) : 0;
   $filter_date = isset($_GET['filter_date']) ? mysqli_real_escape_string($conn, $_GET['filter_date']) : '';
 
   // Build where clause
@@ -36,6 +44,7 @@ if(isset($_GET['ajax']) && $_GET['ajax'] == '1') {
       al.status,
       al.confidence_score,
       al.created_at,
+      al.stored_user_nama,
       u.nama as user_nama,
       u.nim,
       l.nama as labor_nama
@@ -72,7 +81,11 @@ if(isset($_GET['ajax']) && $_GET['ajax'] == '1') {
       $html .= '<td class="text-center">' . ($index + 1) . '</td>';
       $html .= '<td>';
       $html .= '<div class="visitor-name">';
-      $html .= htmlspecialchars($log['user_nama']) . ' (' . htmlspecialchars($log['nim']) . ')';
+      if($log['user_nama']) {
+        $html .= htmlspecialchars($log['user_nama']) . ' (' . htmlspecialchars($log['nim']) . ')';
+      } else {
+        $html .= '<span style="color: #ef4444; font-style: italic;">deleted user (' . htmlspecialchars($log['stored_user_nama'] ?? 'Unknown') . ')</span>';
+      }
       $html .= '</div>';
       $html .= '<div class="visitor-type">';
       $html .= '<i class="fas fa-graduation-cap"></i> Mahasiswa';
@@ -103,11 +116,21 @@ if(isset($_GET['ajax']) && $_GET['ajax'] == '1') {
 }
 
 // Get all labor for dropdown
-$labor_query = mysqli_query($conn, "SELECT id, nama FROM labor ORDER BY nama");
+//$labor_query = mysqli_query($conn, "SELECT id, nama FROM labor ORDER BY nama");
+//if(!$labor_query) {
+//  die("Error loading labor list: " . mysqli_error($conn));
+//}
+//$labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
+
+
+// Tentukan labor yang ingin digunakan
+$default_labor_id = 3; // Ubah ke ID labor yang ingin
+$labor_query = mysqli_query($conn, "SELECT id, nama FROM labor WHERE id = $default_labor_id");
 if(!$labor_query) {
   die("Error loading labor list: " . mysqli_error($conn));
 }
 $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
+
 ?>
 
 <!DOCTYPE html>
@@ -470,10 +493,9 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
       </div>
       <div class="col-md-3 mb-3">
         <label class="form-label" style="font-weight: 600; color: var(--text-primary); font-size: 13px;">Labor</label>
-        <select id="laborSelect" class="form-select">
-          <option value="0">Semua Labor</option>
+        <select id="laborSelect" class="form-select" disabled>
           <?php foreach($labor_list as $labor): ?>
-            <option value="<?= $labor['id'] ?>">
+            <option value="<?= $labor['id'] ?>" selected>
               <?= htmlspecialchars($labor['nama']) ?>
             </option>
           <?php endforeach; ?>
@@ -534,19 +556,32 @@ function performSearch() {
 
   // Make AJAX request
   fetch('history.php?' + params.toString())
-    .then(response => response.json())
-    .then(data => {
-      if(data.success) {
-        container.innerHTML = data.html;
-      } else {
-        // Show detailed error for debugging
-        console.error('Error response:', data);
-        container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Terjadi kesalahan</p><p style="font-size: 14px; font-weight: 400; margin: 0; white-space: pre-wrap; text-align: left; font-family: monospace; color: #ef4444;">' + htmlEscape(data.error) + '</p></div>';
+    .then(response => {
+      console.log('Response status:', response.status);
+      if(!response.ok) {
+        throw new Error('HTTP error, status: ' + response.status);
+      }
+      return response.text(); // Get as text first to check
+    })
+    .then(text => {
+      console.log('Response text:', text.substring(0, 100)); // Log first 100 chars
+      try {
+        const data = JSON.parse(text);
+        if(data.success) {
+          container.innerHTML = data.html;
+        } else {
+          console.error('Error response:', data);
+          container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Terjadi kesalahan</p><p style="font-size: 14px; font-weight: 400; margin: 0; white-space: pre-wrap; text-align: left; font-family: monospace; color: #ef4444;">' + htmlEscape(data.error || 'Unknown error') + '</p></div>';
+        }
+      } catch(parseError) {
+        console.error('JSON Parse Error:', parseError);
+        console.error('Response was:', text);
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Terjadi kesalahan parsing</p><p style="font-size: 14px; font-weight: 400; margin: 0; white-space: pre-wrap; text-align: left; font-family: monospace; color: #ef4444;">Invalid JSON response</p></div>';
       }
     })
     .catch(error => {
-      console.error('Error:', error);
-      container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Terjadi kesalahan saat memuat data</p><p style="font-size: 14px; font-weight: 400; margin: 0;">Silakan coba lagi.</p></div>';
+      console.error('Fetch Error:', error);
+      container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Terjadi kesalahan saat memuat data</p><p style="font-size: 14px; font-weight: 400; margin: 0; color: #ef4444;">' + error.message + '</p></div>';
     });
 }
 
@@ -567,6 +602,11 @@ document.getElementById('laborSelect').addEventListener('change', function() {
 });
 
 document.getElementById('filterDate').addEventListener('change', function() {
+  performSearch();
+});
+
+// AUTO-TRIGGER search saat page load
+document.addEventListener('DOMContentLoaded', function() {
   performSearch();
 });
 </script>
