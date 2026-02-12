@@ -12,11 +12,13 @@ if(isset($_GET['ajax']) && $_GET['ajax'] == '1') {
   
   // Get filter parameters
   $search = isset($_GET['search']) ? mysqli_real_escape_string($conn, $_GET['search']) : '';
-
-  $selected_labor = isset($_GET['labor']) ? intval($_GET['labor']) : 3; // ubah Default labor
-
-  //$selected_labor = isset($_GET['labor']) ? intval($_GET['labor']) : 0;
+  $selected_labor = isset($_GET['labor']) ? intval($_GET['labor']) : 3;
   $filter_date = isset($_GET['filter_date']) ? mysqli_real_escape_string($conn, $_GET['filter_date']) : '';
+  
+  // Pagination setup
+  $items_per_page = 20;
+  $current_page = isset($_GET['page']) ? intval($_GET['page']) : 1;
+  if($current_page < 1) $current_page = 1;
 
   // Build where clause
   $where_parts = [];
@@ -34,8 +36,22 @@ if(isset($_GET['ajax']) && $_GET['ajax'] == '1') {
   }
 
   $where_clause = count($where_parts) > 0 ? "WHERE " . implode(" AND ", $where_parts) : "";
+  
+  // Get total count for pagination
+  $count_query = "SELECT COUNT(*) as total FROM attendance_logs al LEFT JOIN users u ON al.user_id = u.id LEFT JOIN labor l ON al.labor_id = l.id $where_clause";
+  $count_result = mysqli_query($conn, $count_query);
+  $total_records = mysqli_fetch_assoc($count_result)['total'] ?? 0;
+  $total_pages = ceil($total_records / $items_per_page);
+  
+  // Validate current page
+  if($current_page > $total_pages && $total_pages > 0) {
+    $current_page = $total_pages;
+  }
+  
+  // Calculate offset
+  $offset = ($current_page - 1) * $items_per_page;
 
-  // Get attendance logs
+  // Get attendance logs with pagination
   $query = "
     SELECT 
       al.id,
@@ -53,17 +69,12 @@ if(isset($_GET['ajax']) && $_GET['ajax'] == '1') {
     LEFT JOIN labor l ON al.labor_id = l.id
     $where_clause
     ORDER BY al.created_at DESC
-    LIMIT 1000
+    LIMIT $items_per_page OFFSET $offset
   ";
 
   $result = mysqli_query($conn, $query);
   if(!$result) {
     $error_msg = mysqli_error($conn);
-    
-    // Debug: Log the error
-    error_log("History AJAX Error: " . $error_msg);
-    error_log("Query: " . $query);
-    
     echo json_encode(['success' => false, 'error' => $error_msg]);
     exit;
   }
@@ -71,14 +82,17 @@ if(isset($_GET['ajax']) && $_GET['ajax'] == '1') {
   $attendance_logs = mysqli_fetch_all($result, MYSQLI_ASSOC);
   
   // Generate table HTML
+  $html = '';
   if(count($attendance_logs) > 0) {
-    $html = '<div class="results-info"><strong>' . count($attendance_logs) . '</strong> data ditemukan</div>';
+    $html .= '<div class="results-info"><strong>' . count($attendance_logs) . '</strong> data dari <strong>' . $total_records . '</strong> total data</div>';
     $html .= '<div class="table-responsive"><table class="table table-bordered table-hover">';
     $html .= '<thead><tr><th width="5%">No</th><th width="25%">Nama</th><th width="15%">Tipe</th><th width="15%">Labor</th><th width="12%">Status</th><th width="28%">Waktu</th></tr></thead><tbody>';
     
+    $start_num = ($current_page - 1) * $items_per_page + 1;
+    
     foreach($attendance_logs as $index => $log) {
       $html .= '<tr>';
-      $html .= '<td class="text-center">' . ($index + 1) . '</td>';
+      $html .= '<td class="text-center">' . ($start_num + $index) . '</td>';
       $html .= '<td>';
       $html .= '<div class="visitor-name">';
       if($log['user_nama']) {
@@ -111,7 +125,69 @@ if(isset($_GET['ajax']) && $_GET['ajax'] == '1') {
     $html = '<div class="empty-state"><i class="fas fa-search"></i><p>Data tidak ditemukan</p><p style="font-size: 14px; font-weight: 400; margin: 0;">Tidak ada data yang sesuai dengan filter Anda. Coba ubah kriteria pencarian.</p></div>';
   }
   
-  echo json_encode(['success' => true, 'html' => $html, 'count' => count($attendance_logs)]);
+  // Generate pagination HTML
+  $pagination_html = '';
+  if($total_pages > 1) {
+    $pagination_html .= '<div class="pagination-container">';
+    $pagination_html .= '<div class="pagination-info">Halaman <strong>' . $current_page . '</strong> dari <strong>' . $total_pages . '</strong> | Total: <strong>' . $total_records . '</strong> data</div>';
+    $pagination_html .= '<div class="pagination-controls">';
+    
+    // First & Previous buttons
+    if($current_page > 1) {
+      $pagination_html .= '<button class="pagination-btn pagination-btn-first" onclick="goToPage(1)" title="Halaman Pertama"><i class="fas fa-chevron-left"></i> Pertama</button>';
+      $pagination_html .= '<button class="pagination-btn pagination-btn-prev" onclick="goToPage(' . ($current_page - 1) . ')" title="Halaman Sebelumnya"><i class="fas fa-chevron-left"></i> Sebelumnya</button>';
+    } else {
+      $pagination_html .= '<button class="pagination-btn pagination-btn-disabled" disabled><i class="fas fa-chevron-left"></i> Pertama</button>';
+      $pagination_html .= '<button class="pagination-btn pagination-btn-disabled" disabled><i class="fas fa-chevron-left"></i> Sebelumnya</button>';
+    }
+    
+    // Page numbers
+    $pagination_html .= '<div class="pagination-pages">';
+    $max_pages_display = 5;
+    $start_page = max(1, $current_page - floor($max_pages_display / 2));
+    $end_page = min($total_pages, $start_page + $max_pages_display - 1);
+    if($end_page - $start_page + 1 < $max_pages_display) {
+      $start_page = max(1, $end_page - $max_pages_display + 1);
+    }
+    
+    if($start_page > 1) {
+      $pagination_html .= '<span class="pagination-ellipsis">...</span>';
+    }
+    
+    for($i = $start_page; $i <= $end_page; $i++) {
+      if($i == $current_page) {
+        $pagination_html .= '<span class="pagination-page-active">' . $i . '</span>';
+      } else {
+        $pagination_html .= '<button class="pagination-page" onclick="goToPage(' . $i . ')">' . $i . '</button>';
+      }
+    }
+    
+    if($end_page < $total_pages) {
+      $pagination_html .= '<span class="pagination-ellipsis">...</span>';
+    }
+    $pagination_html .= '</div>';
+    
+    // Next & Last buttons
+    if($current_page < $total_pages) {
+      $pagination_html .= '<button class="pagination-btn pagination-btn-next" onclick="goToPage(' . ($current_page + 1) . ')" title="Halaman Berikutnya">Berikutnya <i class="fas fa-chevron-right"></i></button>';
+      $pagination_html .= '<button class="pagination-btn pagination-btn-last" onclick="goToPage(' . $total_pages . ')" title="Halaman Terakhir">Terakhir <i class="fas fa-chevron-right"></i></button>';
+    } else {
+      $pagination_html .= '<button class="pagination-btn pagination-btn-disabled" disabled>Berikutnya <i class="fas fa-chevron-right"></i></button>';
+      $pagination_html .= '<button class="pagination-btn pagination-btn-disabled" disabled>Terakhir <i class="fas fa-chevron-right"></i></button>';
+    }
+    
+    $pagination_html .= '</div></div>';
+  }
+  
+  echo json_encode([
+    'success' => true,
+    'html' => $html,
+    'pagination' => $pagination_html,
+    'count' => count($attendance_logs),
+    'total' => $total_records,
+    'current_page' => $current_page,
+    'total_pages' => $total_pages
+  ]);
   exit;
 }
 
@@ -441,6 +517,100 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
     margin-bottom: 15px;
   }
 
+  /* Pagination Styles */
+  .pagination-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 2px solid var(--border-color);
+  }
+
+  .pagination-info {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  .pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .pagination-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: 2px solid var(--border-color);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .pagination-btn:hover:not(.pagination-btn-disabled) {
+    border-color: var(--primary);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white;
+    transform: translateY(-2px);
+  }
+
+  .pagination-btn.pagination-btn-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    color: var(--text-secondary);
+  }
+
+  .pagination-pages {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .pagination-page, .pagination-page-active {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: 2px solid var(--border-color);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    padding: 0;
+  }
+
+  .pagination-page:hover {
+    border-color: var(--primary);
+    background: rgba(245, 158, 11, 0.05);
+  }
+
+  .pagination-page-active {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white;
+    border-color: var(--primary);
+    cursor: default;
+  }
+
+  .pagination-ellipsis {
+    color: var(--text-secondary);
+    font-weight: 600;
+    padding: 0 4px;
+  }
+
   @media (max-width: 768px) {
     .main-content {
       margin-left: 0;
@@ -537,7 +707,7 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
 <script>
 
 // AJAX Search Function
-function performSearch() {
+function performSearch(page = 1) {
   const search = document.getElementById('searchInput').value;
   const labor = document.getElementById('laborSelect').value;
   const filterDate = document.getElementById('filterDate').value;
@@ -547,7 +717,8 @@ function performSearch() {
     ajax: '1',
     search: search,
     labor: labor,
-    filter_date: filterDate
+    filter_date: filterDate,
+    page: page
   });
 
   // Show loading state
@@ -557,18 +728,16 @@ function performSearch() {
   // Make AJAX request
   fetch('history.php?' + params.toString())
     .then(response => {
-      console.log('Response status:', response.status);
       if(!response.ok) {
         throw new Error('HTTP error, status: ' + response.status);
       }
-      return response.text(); // Get as text first to check
+      return response.text();
     })
     .then(text => {
-      console.log('Response text:', text.substring(0, 100)); // Log first 100 chars
       try {
         const data = JSON.parse(text);
         if(data.success) {
-          container.innerHTML = data.html;
+          container.innerHTML = data.html + (data.pagination || '');
         } else {
           console.error('Error response:', data);
           container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Terjadi kesalahan</p><p style="font-size: 14px; font-weight: 400; margin: 0; white-space: pre-wrap; text-align: left; font-family: monospace; color: #ef4444;">' + htmlEscape(data.error || 'Unknown error') + '</p></div>';
@@ -583,6 +752,11 @@ function performSearch() {
       console.error('Fetch Error:', error);
       container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Terjadi kesalahan saat memuat data</p><p style="font-size: 14px; font-weight: 400; margin: 0; color: #ef4444;">' + error.message + '</p></div>';
     });
+}
+
+// Go to specific page
+function goToPage(page) {
+  performSearch(page);
 }
 
 // Helper function to escape HTML

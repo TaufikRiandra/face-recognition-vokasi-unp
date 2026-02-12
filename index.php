@@ -25,6 +25,11 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
 // Force gunakan labor spesifik (jangan dari GET parameter)
 $selected_labor = 3; // Ubah ke ID labor yang ingin
 
+// Pagination setup
+$items_per_page = 20;
+$current_page = isset($_GET['page']) ? intval($_GET['page']) : 1;
+if($current_page < 1) $current_page = 1;
+
 // Build query with optional labor filter (with table alias for main query)
 $where_clause = "DATE(al.created_at) = '$today'";
 if($selected_labor > 0) {
@@ -37,7 +42,21 @@ if($selected_labor > 0) {
   $where_clause_stats .= " AND labor_id = $selected_labor";
 }
 
-// Get today's attendance logs with user details
+// Get total count for pagination
+$count_query = "SELECT COUNT(*) as total FROM attendance_logs al WHERE $where_clause";
+$count_result = mysqli_query($conn, $count_query);
+$total_records = mysqli_fetch_assoc($count_result)['total'] ?? 0;
+$total_pages = ceil($total_records / $items_per_page);
+
+// Validate current page
+if($current_page > $total_pages && $total_pages > 0) {
+  $current_page = $total_pages;
+}
+
+// Calculate offset
+$offset = ($current_page - 1) * $items_per_page;
+
+// Get today's attendance logs with user details (with LIMIT and OFFSET)
 $query = "
   SELECT 
     al.id,
@@ -55,6 +74,7 @@ $query = "
   LEFT JOIN labor l ON al.labor_id = l.id
   WHERE $where_clause
   ORDER BY al.created_at DESC
+  LIMIT $items_per_page OFFSET $offset
 ";
 
 $result = mysqli_query($conn, $query);
@@ -435,6 +455,101 @@ $total_unik = mysqli_fetch_assoc(mysqli_query($conn, $unique_visitors_query))['t
     box-shadow: 0 0 0 0.2rem rgba(245, 158, 11, 0.25);
   }
 
+  /* Pagination Styles */
+  .pagination-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 2px solid var(--border-color);
+  }
+
+  .pagination-info {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  .pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .pagination-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border: 2px solid var(--border-color);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .pagination-btn:hover:not(.pagination-btn-disabled) {
+    border-color: var(--primary);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white;
+    transform: translateY(-2px);
+  }
+
+  .pagination-btn.pagination-btn-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    color: var(--text-secondary);
+  }
+
+  .pagination-pages {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .pagination-page, .pagination-page-active {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: 2px solid var(--border-color);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 13px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .pagination-page:hover {
+    border-color: var(--primary);
+    background: rgba(245, 158, 11, 0.05);
+  }
+
+  .pagination-page-active {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white;
+    border-color: var(--primary);
+    cursor: default;
+  }
+
+  .pagination-ellipsis {
+    color: var(--text-secondary);
+    font-weight: 600;
+    padding: 0 4px;
+  }
+
   @media (max-width: 1200px) {
     .stats-grid {
       grid-template-columns: repeat(2, 1fr);
@@ -726,6 +841,76 @@ $total_unik = mysqli_fetch_assoc(mysqli_query($conn, $unique_visitors_query))['t
           </tbody>
         </table>
       </div>
+
+      <!-- Pagination -->
+      <?php if($total_pages > 1): ?>
+      <div class="pagination-container">
+        <div class="pagination-info">
+          Halaman <strong><?= $current_page ?></strong> dari <strong><?= $total_pages ?></strong> | Total: <strong><?= $total_records ?></strong> data
+        </div>
+        <div class="pagination-controls">
+          <?php if($current_page > 1): ?>
+            <a href="?page=1" class="pagination-btn pagination-btn-first" title="Halaman Pertama">
+              <i class="fas fa-chevron-left"></i> Pertama
+            </a>
+            <a href="?page=<?= $current_page - 1 ?>" class="pagination-btn pagination-btn-prev" title="Halaman Sebelumnya">
+              <i class="fas fa-chevron-left"></i> Sebelumnya
+            </a>
+          <?php else: ?>
+            <button class="pagination-btn pagination-btn-disabled" disabled>
+              <i class="fas fa-chevron-left"></i> Pertama
+            </button>
+            <button class="pagination-btn pagination-btn-disabled" disabled>
+              <i class="fas fa-chevron-left"></i> Sebelumnya
+            </button>
+          <?php endif; ?>
+
+          <div class="pagination-pages">
+            <?php
+            $max_pages_display = 5;
+            $start_page = max(1, $current_page - floor($max_pages_display / 2));
+            $end_page = min($total_pages, $start_page + $max_pages_display - 1);
+            
+            if($end_page - $start_page + 1 < $max_pages_display) {
+              $start_page = max(1, $end_page - $max_pages_display + 1);
+            }
+            
+            if($start_page > 1) {
+              echo '<span class="pagination-ellipsis">...</span>';
+            }
+            
+            for($i = $start_page; $i <= $end_page; $i++) {
+              if($i == $current_page) {
+                echo '<span class="pagination-page-active">' . $i . '</span>';
+              } else {
+                echo '<a href="?page=' . $i . '" class="pagination-page">' . $i . '</a>';
+              }
+            }
+            
+            if($end_page < $total_pages) {
+              echo '<span class="pagination-ellipsis">...</span>';
+            }
+            ?>
+          </div>
+
+          <?php if($current_page < $total_pages): ?>
+            <a href="?page=<?= $current_page + 1 ?>" class="pagination-btn pagination-btn-next" title="Halaman Berikutnya">
+              Berikutnya <i class="fas fa-chevron-right"></i>
+            </a>
+            <a href="?page=<?= $total_pages ?>" class="pagination-btn pagination-btn-last" title="Halaman Terakhir">
+              Terakhir <i class="fas fa-chevron-right"></i>
+            </a>
+          <?php else: ?>
+            <button class="pagination-btn pagination-btn-disabled" disabled>
+              Berikutnya <i class="fas fa-chevron-right"></i>
+            </button>
+            <button class="pagination-btn pagination-btn-disabled" disabled>
+              Terakhir <i class="fas fa-chevron-right"></i>
+            </button>
+          <?php endif; ?>
+        </div>
+      </div>
+      <?php endif; ?>
     <?php else: ?>
       <div class="empty-state">
         <i class="fas fa-inbox"></i>
