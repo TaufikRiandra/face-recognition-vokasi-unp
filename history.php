@@ -367,7 +367,42 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
     background-color: #d1d5db;
   }
 
-  .table-card {
+  /* Export Buttons */
+  .btn-export {
+    border: none;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: white;
+    text-decoration: none;
+  }
+
+  .btn-export-excel {
+    background: linear-gradient(135deg, #207245 0%, #165C31 100%);
+  }
+
+  .btn-export-excel:hover {
+    background: linear-gradient(135deg, #165C31 0%, #0F4620 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(32, 114, 69, 0.3);
+    color: white;
+  }
+
+  .btn-export-pdf {
+    background: linear-gradient(135deg, #DC2626 0%, #991B1B 100%);
+  }
+
+  .btn-export-pdf:hover {
+    background: linear-gradient(135deg, #991B1B 0%, #7C2D12 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+    color: white;
+  }
     background: var(--bg-primary);
     border-radius: 10px;
     padding: 30px;
@@ -686,6 +721,12 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
       <a href="index.php" class="btn btn-secondary">
         <i class="fas fa-arrow-left"></i> Kembali
       </a>
+      <button class="btn btn-export btn-export-excel" onclick="exportToExcel()">
+        <i class="fas fa-file-excel"></i> Export Excel
+      </button>
+      <button class="btn btn-export btn-export-pdf" onclick="exportToPDF()">
+        <i class="fas fa-file-pdf"></i> Export PDF
+      </button>
     </div>
   </div>
 
@@ -757,6 +798,69 @@ function performSearch(page = 1) {
 // Go to specific page
 function goToPage(page) {
   performSearch(page);
+}
+
+// Export to Excel
+function exportToExcel() {
+  const search = document.getElementById('searchInput').value;
+  const labor = document.getElementById('laborSelect').value;
+  const filterDate = document.getElementById('filterDate').value;
+  const button = event.target;
+  const originalText = button.innerHTML;
+  
+  // Prepare query parameters
+  const params = new URLSearchParams({
+    export: 'excel',
+    search: search,
+    labor: labor,
+    filter_date: filterDate
+  });
+  
+  // Show loading message
+  button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Membuat file...';
+  button.disabled = true;
+  
+  // Download the file
+  window.location.href = 'backend/api_export_history.php?' + params.toString();
+  
+  // Reset button immediately
+  setTimeout(() => {
+    button.innerHTML = originalText;
+    button.disabled = false;
+  }, 500);
+}
+
+// Export to PDF
+function exportToPDF() {
+  const search = document.getElementById('searchInput').value;
+  const labor = document.getElementById('laborSelect').value;
+  const filterDate = document.getElementById('filterDate').value;
+  const button = event.target;
+  const originalText = button.innerHTML;
+  
+  // Prepare query parameters
+  const params = new URLSearchParams({
+    export: 'pdf',
+    search: search,
+    labor: labor,
+    filter_date: filterDate
+  });
+  
+  // Show loading message
+  button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Membuat file...';
+  button.disabled = true;
+  
+  // Download the file
+  const link = document.createElement('a');
+  link.href = 'backend/api_export_history.php?' + params.toString();
+  link.target = '_blank';
+  link.click();
+  
+  // Reset button immediately
+  setTimeout(() => {
+    button.innerHTML = originalText;
+    button.disabled = false;
+  }, 500);
 }
 
 // Helper function to escape HTML
