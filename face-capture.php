@@ -773,6 +773,114 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
     100% { transform: rotate(360deg); }
   }
 
+  /* Registration Instruction Toast */
+  .registration-instruction-toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4);
+    color: white;
+    max-width: 380px;
+    z-index: 3000;
+    animation: slideInBottom 0.4s ease;
+    pointer-events: auto;
+  }
+
+  @keyframes slideInBottom {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .instruction-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    font-weight: 700;
+    font-size: 16px;
+  }
+
+  .instruction-header i {
+    font-size: 20px;
+  }
+
+  .instruction-body {
+    margin-bottom: 15px;
+    background: rgba(255, 255, 255, 0.15);
+    padding: 15px;
+    border-radius: 8px;
+  }
+
+  .instruction-body p {
+    margin: 0 0 8px 0;
+    font-size: 15px;
+    line-height: 1.4;
+    font-weight: 500;
+  }
+
+  .instruction-body strong {
+    font-weight: 700;
+    color: #ffd700;
+  }
+
+  .instruction-body small {
+    font-size: 12px;
+    opacity: 0.9;
+  }
+
+  .instruction-footer {
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn-instruction {
+    flex: 1;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 14px;
+    transition: all 0.2s;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    pointer-events: auto;
+  }
+
+  .btn-lanjutkan {
+    background: rgba(255, 255, 255, 0.25);
+    color: white;
+  }
+
+  .btn-lanjutkan:hover {
+    background: rgba(255, 255, 255, 0.35);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-2px);
+  }
+
+  .btn-batalkan {
+    background: rgba(255, 59, 48, 0.9);
+    color: white;
+  }
+
+  .btn-batalkan:hover {
+    background: rgba(255, 59, 48, 1);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+  }
+
   @media (max-width: 1200px) {
     .modal-options {
       grid-template-columns: 1fr;
@@ -994,6 +1102,9 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
   
   // Flag untuk disable absensi setelah register
   let isAbsensiDisabled = false; // Prevent auto-submit setelah register
+  
+  // Flag untuk pause capture saat tunggu user approval
+  let isCapturingPaused = false; // Pause setiap frame dan tunggu user lanjutkan
 
   // Load Face API Models
   async function loadModels() {
@@ -1390,6 +1501,12 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
     lastErrorMessageTime = 0; // Reset error message timer
     selectedStatus = null; // RESET selectedStatus agar auto-change
     
+    // Reset capture registration
+    isCapturingMultipleFrames = false;
+    isCapturingPaused = false;
+    multipleEmbeddings = [];
+    frameCount = 0;
+    
     // Clear descriptor reset timer
     if(descriptorResetTimer) {
       clearTimeout(descriptorResetTimer);
@@ -1648,6 +1765,11 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
   }
 
   function captureMultipleFramesLoop(userId) {
+    // Jika pause, jangan lanjutkan capture
+    if(isCapturingPaused) {
+      return;
+    }
+
     if(!isCapturingMultipleFrames || frameCount >= FRAMES_TO_CAPTURE) {
       if(frameCount >= FRAMES_TO_CAPTURE) {
         // Selesai capture, rata-rata embeddings
@@ -1703,10 +1825,9 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
           const progress = Math.round((frameCount / FRAMES_TO_CAPTURE) * 100);
           updateRegistrationStatus('capturing', `📸 Mengambil gambar ${frameCount}/${FRAMES_TO_CAPTURE}`, progress);
           
-          // Lanjut capture frame berikutnya setelah 400ms
-          setTimeout(() => {
-            captureMultipleFramesLoop(userId);
-          }, 400);
+          // Pause capture dan tampilkan instruksi
+          isCapturingPaused = true;
+          showCaptureInstructionToast(frameCount);
         } else {
           // Wajah tidak terdeteksi, coba lagi
           updateRegistrationStatus('capturing', '⚠ Wajah tidak terdeteksi, coba lagi...', (frameCount / FRAMES_TO_CAPTURE) * 100);
@@ -1721,6 +1842,107 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
           captureMultipleFramesLoop(userId);
         }, 300);
       });
+  }
+
+  // Tampilkan instruksi untuk setiap frame capture
+  function showCaptureInstructionToast(frameNumber) {
+    const toastContainer = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    
+    // Instruksi berbeda untuk setiap frame
+    let instruction = '';
+    switch(frameNumber) {
+      case 1:
+        instruction = '✓ Gambar 1 berhasil! Sekarang ubah sudut kepala ke <strong>KIRI</strong>';
+        break;
+      case 2:
+        instruction = '✓ Gambar 2 berhasil! Sekarang ubah sudut kepala ke <strong>KANAN</strong>';
+        break;
+      case 3:
+        instruction = '✓ Gambar 3 berhasil! Ambil dengan <strong>AKSESORIS</strong> (seperti kacamata jika ada)';
+        break;
+      case 4:
+        instruction = '✓ Gambar 4 berhasil! Ubah <strong>EKSPRESI WAJAH</strong> (senyum atau serius)';
+        break;
+      case 5:
+        instruction = '✓ Gambar 5 berhasil! <strong>Posisi natural</strong> untuk penyelesaian';
+        break;
+    }
+    
+    toast.className = 'registration-instruction-toast';
+    toast.innerHTML = `
+      <div class="instruction-header">
+        <i class="fas fa-video"></i>
+        <span>Intruksi Capture Wajah Optimal</span>
+      </div>
+      <div class="instruction-body">
+        <p>${instruction}</p>
+        <small>Gambar ${frameNumber}/${FRAMES_TO_CAPTURE}</small>
+      </div>
+      <div class="instruction-footer">
+        <button class="btn-instruction btn-lanjutkan" onclick="resumeCaptureFrame()">
+          <i class="fas fa-check"></i> Lanjutkan
+        </button>
+        <button class="btn-instruction btn-batalkan" onclick="cancelCaptureProcess()">
+          <i class="fas fa-times"></i> Batalkan
+        </button>
+      </div>
+    `;
+    
+    toastContainer.appendChild(toast);
+    
+    // Auto remove setelah 60 detik jika user tidak action
+    const timeout = setTimeout(() => {
+      toast.remove();
+    }, 60000);
+    
+    // Remove timeout jika user klik tombol
+    toast.addEventListener('click', () => {
+      clearTimeout(timeout);
+    });
+  }
+
+  // Resume capture frame berikutnya
+  function resumeCaptureFrame() {
+    // Remove current toast
+    const activeToast = document.querySelector('.registration-instruction-toast');
+    if(activeToast) {
+      activeToast.remove();
+    }
+    
+    // Resume capture
+    isCapturingPaused = false;
+    
+    // Lanjut ke frame berikutnya setelah 400ms
+    setTimeout(() => {
+      captureMultipleFramesLoop(selectedStudent.id);
+    }, 400);
+  }
+
+  // Cancel capture process
+  function cancelCaptureProcess() {
+    // Remove current toast
+    const activeToast = document.querySelector('.registration-instruction-toast');
+    if(activeToast) {
+      activeToast.remove();
+    }
+    
+    // Cancel capturing
+    isCapturingMultipleFrames = false;
+    isCapturingPaused = false;
+    multipleEmbeddings = [];
+    frameCount = 0;
+    
+    // Hide registration status
+    document.getElementById('registrationStatusSection').style.display = 'none';
+    
+    // Show cancel message
+    showToast('❌ Proses capture dibatalkan. Silakan coba lagi.', 'error');
+    
+    // Reset capture
+    setTimeout(() => {
+      resetCapture();
+    }, 1000);
   }
 
   function finalizeMultipleFrameCapture(userId) {
