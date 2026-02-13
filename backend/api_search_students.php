@@ -4,16 +4,20 @@ include 'koneksi.php';
 
 header('Content-Type: application/json');
 
-if(!isset($_SESSION['admin_id'])) {
-  echo json_encode(['status' => 'error', 'message' => 'Unauthorized']);
-  exit;
+// Support both GET and POST
+$query = '';
+if($_SERVER['REQUEST_METHOD'] === 'POST') {
+  $input = json_decode(file_get_contents('php://input'), true);
+  $query = $input['query'] ?? $_POST['query'] ?? '';
+} else {
+  $query = $_GET['query'] ?? '';
 }
 
-$input = json_decode(file_get_contents('php://input'), true);
-$query = $input['query'] ?? '';
+// Trim dan validasi query
+$query = trim($query);
 
 if(strlen($query) < 1) {
-  echo json_encode(['status' => 'error', 'message' => 'Query terlalu pendek']);
+  echo json_encode(['success' => false, 'message' => 'Query terlalu pendek']);
   exit;
 }
 
@@ -36,7 +40,7 @@ $sql = "
 $result = mysqli_query($conn, $sql);
 
 if(!$result) {
-  echo json_encode(['status' => 'error', 'message' => 'Database error: ' . mysqli_error($conn)]);
+  echo json_encode(['success' => false, 'message' => 'Database error: ' . mysqli_error($conn)]);
   exit;
 }
 
@@ -50,7 +54,7 @@ while($row = mysqli_fetch_assoc($result)) {
 }
 
 echo json_encode([
-  'status' => 'success',
+  'success' => true,
   'students' => $students,
   'count' => count($students)
 ]);

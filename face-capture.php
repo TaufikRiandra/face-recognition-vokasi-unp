@@ -154,6 +154,7 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
 
   .control-group {
     margin-bottom: 15px;
+    position: relative;
   }
 
   .control-group:last-child {
@@ -181,7 +182,7 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
     width: 100%;
   }
 
-  .form-select:hover {
+  .form-select:hover:not(:disabled) {
     border-color: var(--primary);
   }
 
@@ -189,6 +190,14 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
     border-color: var(--primary);
     outline: none;
     box-shadow: 0 0 0 0.2rem rgba(245, 158, 11, 0.25);
+  }
+
+  .form-select:disabled {
+    background-color: var(--bg-secondary);
+    color: var(--text-secondary);
+    cursor: not-allowed;
+    opacity: 0.7;
+    border-color: var(--border-color);
   }
 
   .button-group {
@@ -889,6 +898,278 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
 
 
 
+  /* Segmented Control Styles */
+  .segmented-control {
+    display: flex;
+    gap: 0;
+    margin-bottom: 30px;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+    background: #e0e0e5;
+    padding: 4px;
+    border-radius: 50px;
+    overflow: hidden;
+  }
+
+  .segment-btn {
+    flex: 1;
+    padding: 12px 28px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 15px;
+    color: #666666;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 46px;
+    white-space: nowrap;
+  }
+
+  .segment-btn.active {
+    background: #ffffff;
+    color: #333333;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .content-section {
+    display: none;
+    animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .content-section.active {
+    display: block;
+  }
+
+  .manual-entry-card {
+    background: var(--bg-primary);
+    border-radius: 10px;
+    padding: 30px;
+    border: 2px solid var(--border-color);
+    margin-bottom: 40px;
+  }
+
+  .manual-entry-card h4 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 25px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .form-group-manual {
+    margin-bottom: 20px;
+  }
+
+  .form-label-manual {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  .form-input-manual {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--text-primary);
+    background-color: var(--bg-primary);
+    transition: all 0.2s;
+    font-weight: 500;
+  }
+
+  .form-input-manual:hover {
+    border-color: var(--primary);
+  }
+
+  .form-input-manual:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 0.2rem rgba(245, 158, 11, 0.25);
+  }
+
+  .nim-search-results-inline {
+    position: relative;
+    width: 100%;
+    background: var(--bg-primary);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    max-height: 250px;
+    overflow-y: auto;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    margin-top: 10px;
+    margin-bottom: 15px;
+  }
+
+  .search-result-item {
+    padding: 12px 15px;
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-primary);
+    font-size: 14px;
+  }
+
+  .search-result-item:last-child {
+    border-bottom: none;
+  }
+
+  .search-result-item:hover {
+    background: rgba(245, 158, 11, 0.08);
+    padding-left: 20px;
+  }
+
+  .search-result-not-found {
+    color: var(--danger);
+    cursor: not-allowed;
+    text-align: center;
+    padding: 20px 15px;
+  }
+
+  .search-result-not-found:hover {
+    background: transparent;
+    padding-left: 15px;
+  }
+
+  .search-result-item i {
+    min-width: 20px;
+    text-align: center;
+  }
+
+  .status-buttons-manual {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .status-btn-manual {
+    flex: 1;
+    padding: 12px 20px;
+    border: 2px solid var(--border-color);
+    background: var(--bg-primary);
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .status-btn-manual:hover {
+    border-color: var(--primary);
+    background: var(--bg-secondary);
+  }
+
+  .status-btn-manual.active-status {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white;
+    border-color: var(--primary);
+  }
+
+  .submit-button-manual {
+    width: 100%;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 14px;
+  }
+
+  .submit-button-manual:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+  }
+
+  .submit-button-manual:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .search-result-card {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, rgba(217, 119, 6, 0.05) 100%);
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+
+  .search-result-card:hover {
+    border-color: var(--primary);
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.1) 100%);
+    transform: translateX(5px);
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.15);
+  }
+
+  .search-result-card:last-child {
+    margin-bottom: 0;
+  }
+
+  .search-result-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .search-result-info {
+    flex: 1;
+  }
+
+  .search-result-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+
+  .search-result-nim {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .search-result-badge {
+    background: var(--primary);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
   @media (max-width: 768px) {
     .main-content {
       margin-left: 0;
@@ -916,6 +1197,18 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
       width: 95%;
       max-width: 100%;
     }
+
+    .segmented-control {
+      max-width: 100%;
+      padding: 4px;
+    }
+
+    .segment-btn {
+      padding: 10px 20px;
+      font-size: 13px;
+      border-radius: 42px;
+      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
   }
 </style>
 </head>
@@ -929,7 +1222,19 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
     <p>Gunakan face recognition untuk mencatat kehadiran pengunjung labor secara otomatis</p>
   </div>
 
-  <div class="capture-card">
+  <!-- Segmented Control -->
+  <div class="segmented-control">
+    <button class="segment-btn active" id="faceRecognitionTab" onclick="switchTab('faceRecognition')">
+      <i class="fas fa-face-smile"></i> Face Recognition
+    </button>
+    <button class="segment-btn" id="manualEntryTab" onclick="switchTab('manualEntry')">
+      <i class="fas fa-keyboard"></i> Entry Manual NIM
+    </button>
+  </div>
+
+  <!-- Face Recognition Section -->
+  <div id="faceRecognitionSection" class="content-section active">
+    <div class="capture-card">
     <h4><i class="fas fa-video"></i> Pemindaian Wajah</h4>
 
     <div class="controls-section">
@@ -1017,6 +1322,79 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
       </a>
     </div>
   </div>
+  </div>
+
+  <!-- Manual Entry Section -->
+  <div id="manualEntrySection" class="content-section">
+    <div class="manual-entry-card">
+      <h4><i class="fas fa-keyboard"></i> Entry Manual Absensi</h4>
+
+      <div class="controls-section">
+        <div class="control-group">
+          <label class="control-label"><i class="fas fa-building"></i> Pilih Labor</label>
+          <!-- Dropdown Labor - Hanya satu labor yang bisa dipilih (disabled) -->
+          <select id="laborSelectManual" class="form-select" disabled>
+            <?php foreach($labor_list as $labor): ?>
+              <option value="<?= $labor['id'] ?>" selected><?= htmlspecialchars($labor['nama']) ?></option>
+            <?php endforeach; ?>
+          </select>
+          
+          <!-- UNCOMMENT BAGIAN INI UNTUK ENABLE DROPDOWN SEMUA LABOR:
+          <select id="laborSelectManual" class="form-select">
+            <?php 
+            // Dapatkan semua labor untuk dropdown
+            $all_labor_query = mysqli_query($conn, "SELECT id, nama FROM labor ORDER BY nama");
+            $all_labor_list = mysqli_fetch_all($all_labor_query, MYSQLI_ASSOC);
+            foreach($all_labor_list as $labor): 
+            ?>
+              <option value="<?= $labor['id'] ?>"><?= htmlspecialchars($labor['nama']) ?></option>
+            <?php endforeach; ?>
+          </select>
+          -->
+        </div>
+
+        <div class="control-group">
+          <label class="control-label"><i class="fas fa-check-circle"></i> Status Absensi</label>
+          <div class="status-buttons-manual">
+            <button type="button" class="status-btn-manual" id="statusInManual" onclick="setStatusManual('IN')">
+              <i class="fas fa-arrow-right-to-bracket"></i> Masuk (IN)
+            </button>
+            <button type="button" class="status-btn-manual" id="statusOutManual" onclick="setStatusManual('OUT')">
+              <i class="fas fa-arrow-right-from-bracket"></i> Keluar (OUT)
+            </button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label class="control-label"><i class="fas fa-id-card"></i> Nomor Induk Mahasiswa (NIM)</label>
+          <input type="text" id="nimInput" class="form-input-manual" placeholder="Masukkan NIM mahasiswa..." maxlength="20" onkeyup="searchStudentByNIM(this.value)" autocomplete="off">
+        </div>
+
+        <!-- User Info from NIM (AJAX) -->
+        <div id="manualUserInfoCard" class="user-info-card" style="display: none; margin-top: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
+            <div class="user-info-header" style="margin-bottom: 0;">
+              <div class="user-avatar-large" id="manualUserAvatar">U</div>
+              <div class="user-header-info">
+                <h3 id="manualUserName">-</h3>
+                <p id="manualUserRole">Mahasiswa</p>
+              </div>
+            </div>
+            <div id="multipleDataBadge" style="display: none; background: var(--danger); color: white; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; align-self: flex-start; margin-top: 5px;">
+              <i class="fas fa-exclamation-circle"></i> Ada <span id="multipleDataCount">2</span> data
+            </div>
+          </div>
+          <div class="user-detail-row">
+            <div class="user-detail-label"><i class="fas fa-id-card"></i> NIM</div>
+            <div class="user-detail-value" id="manualUserNim">-</div>
+          </div>
+        </div>
+
+        <button type="button" class="submit-button-manual" id="submitManualBtn" onclick="submitManualAttendance()" disabled style="margin-top: 20px;">
+          <i class="fas fa-check"></i> Simpan Absensi
+        </button>
+    </div>
+  </div>
 
 </div>
 
@@ -1066,6 +1444,248 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
+  // ==================== SEGMENTED CONTROL FUNCTIONS ====================
+  function switchTab(tabName) {
+    // Hide all sections
+    document.getElementById('faceRecognitionSection').classList.remove('active');
+    document.getElementById('manualEntrySection').classList.remove('active');
+    
+    // Deactivate all buttons
+    document.getElementById('faceRecognitionTab').classList.remove('active');
+    document.getElementById('manualEntryTab').classList.remove('active');
+    
+    // Show selected section and activate button
+    if(tabName === 'faceRecognition') {
+      document.getElementById('faceRecognitionSection').classList.add('active');
+      document.getElementById('faceRecognitionTab').classList.add('active');
+      // Start video if models are loaded
+      if(isModelLoaded && video.paused) {
+        video.play();
+      }
+    } else if(tabName === 'manualEntry') {
+      document.getElementById('manualEntrySection').classList.add('active');
+      document.getElementById('manualEntryTab').classList.add('active');
+      // Pause video when switching away
+      if(video && !video.paused) {
+        video.pause();
+      }
+    }
+  }
+
+  // ==================== MANUAL ENTRY FUNCTIONS ====================
+  let selectedStatusManual = null;
+  let searchTimeout = null;
+  let selectedNIMStudent = null;
+  let defaultLaborIdManual = null; // Store default labor ID
+  let hasMultipleStudents = false; // Track jika ada multiple data
+
+  function setStatusManual(status) {
+    selectedStatusManual = status;
+    
+    // Update button states
+    const inBtn = document.getElementById('statusInManual');
+    const outBtn = document.getElementById('statusOutManual');
+    
+    inBtn.classList.remove('active-status');
+    outBtn.classList.remove('active-status');
+    
+    if(status === 'IN') {
+      inBtn.classList.add('active-status');
+    } else {
+      outBtn.classList.add('active-status');
+    }
+    
+    validateManualForm();
+  }
+
+  function validateManualForm() {
+    const nim = document.getElementById('nimInput').value.trim();
+    const submitBtn = document.getElementById('submitManualBtn');
+    
+    // Disable jika ada multiple data
+    if(hasMultipleStudents) {
+      submitBtn.disabled = true;
+      return;
+    }
+    
+    if(nim.length > 0 && selectedStatusManual && selectedNIMStudent) {
+      submitBtn.disabled = false;
+    } else {
+      submitBtn.disabled = true;
+    }
+  }
+
+  // Debounce search timeout
+  let searchNimTimeout = null;
+  let toastTimeout = null;  // Timeout untuk toast notification
+
+  function searchStudentByNIM(query) {
+    const userInfoCard = document.getElementById('manualUserInfoCard');
+    const multipleDataBadge = document.getElementById('multipleDataBadge');
+    
+    query = query.trim();
+    
+    // Clear previous timeouts
+    if(searchNimTimeout) clearTimeout(searchNimTimeout);
+    if(toastTimeout) clearTimeout(toastTimeout);  // Clear toast timeout jika user ketik ulang
+    
+    if(query.length < 1) {
+      userInfoCard.style.display = 'none';
+      selectedNIMStudent = null;
+      hasMultipleStudents = false;
+      validateManualForm();
+      return;
+    }
+
+    // Debounce search
+    searchNimTimeout = setTimeout(() => {
+      fetch('./backend/api_search_students.php?query=' + encodeURIComponent(query))
+        .then(response => response.json())
+        .then(data => {
+          if(data.success && data.students && data.students.length > 0) {
+            // Ambil data pertama (paling match)
+            const student = data.students[0];
+            
+            // Update data ke card
+            selectedNIMStudent = {
+              id: student.id,
+              nama: student.nama,
+              nim: student.nim
+            };
+            
+            document.getElementById('manualUserName').textContent = student.nama || '-';
+            document.getElementById('manualUserNim').textContent = student.nim || '-';
+            document.getElementById('manualUserAvatar').textContent = (student.nama || 'U').charAt(0).toUpperCase();
+            
+            // Tampilkan indicator dan set flag jika ada lebih dari 1 data
+            if(data.students.length > 1) {
+              hasMultipleStudents = true;
+              multipleDataBadge.style.display = 'block';
+              document.getElementById('multipleDataCount').textContent = data.students.length;
+              
+              // Show toast notification dengan jeda 3 detik setelah user selesai mengetik
+              toastTimeout = setTimeout(() => {
+                showToast('⚠️ Ditemukan ' + data.students.length + ' data yang mirip. Harap periksa kembali dan masukkan NIM yang lebih spesifik.', 'error');
+              }, 3000);  // 3 detik delay
+            } else {
+              hasMultipleStudents = false;
+              multipleDataBadge.style.display = 'none';
+            }
+            
+            // Tampilkan card
+            userInfoCard.style.display = 'block';
+          } else {
+            userInfoCard.style.display = 'none';
+            selectedNIMStudent = null;
+            hasMultipleStudents = false;
+          }
+          validateManualForm();
+        })
+        .catch(err => {
+          console.error('Error:', err);
+          userInfoCard.style.display = 'none';
+          selectedNIMStudent = null;
+          hasMultipleStudents = false;
+          validateManualForm();
+        });
+    }, 300); // Debounce 300ms
+  }
+
+  async function submitManualAttendance() {
+    const laborId = document.getElementById('laborSelectManual').value;
+    
+    if(!selectedNIMStudent || !selectedStatusManual) {
+      showToast('Lengkapi semua data terlebih dahulu', 'error');
+      return;
+    }
+
+    // Submit attendance
+    submitAttendanceEntry(selectedNIMStudent.id, laborId, selectedStatusManual);
+  }
+
+  function showManualUserInfo(student) {
+    // Fungsi deprecated - info sudah otomatis update via AJAX
+    // Retained untuk backward compatibility
+  }
+
+  function submitAttendanceEntry(studentId, laborId, status) {
+    showToast('Menyimpan data absensi...', 'info');
+    
+    const formData = new FormData();
+    formData.append('action', 'submit_attendance');
+    formData.append('user_id', studentId);
+    formData.append('labor_id', laborId);
+    formData.append('status', status);
+    formData.append('confidence', 0.95);
+    
+    fetch('./backend/process_attendance.php', {
+      method: 'POST',
+      body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+      if(data.status === 'success') {
+        const studentName = selectedNIMStudent ? selectedNIMStudent.nama : 'Mahasiswa';
+        showToast('Absensi berhasil disimpan! ' + status + ' dicatat untuk ' + studentName, 'success');
+        clearManualForm();
+      } else {
+        showToast(data.message || 'Gagal menyimpan absensi', 'error');
+      }
+    })
+    .catch(err => {
+      console.error('Error:', err);
+      showToast('Terjadi kesalahan saat menyimpan data', 'error');
+    });
+  }
+
+  function clearManualForm() {
+    // Clear all timeouts
+    if(searchNimTimeout) clearTimeout(searchNimTimeout);
+    if(toastTimeout) clearTimeout(toastTimeout);
+    
+    document.getElementById('nimInput').value = '';
+    // Restore default labor ID instead of clearing
+    if(defaultLaborIdManual) {
+      document.getElementById('laborSelectManual').value = defaultLaborIdManual;
+    }
+    document.getElementById('manualUserInfoCard').style.display = 'none';
+    selectedStatusManual = null;
+    selectedNIMStudent = null;
+    hasMultipleStudents = false;
+    
+    // Reset button states
+    document.getElementById('statusInManual').classList.remove('active-status');
+    document.getElementById('statusOutManual').classList.remove('active-status');
+    document.getElementById('submitManualBtn').disabled = true;
+  }
+
+  // Add event listener for form interactions
+  document.addEventListener('DOMContentLoaded', () => {
+    // Initialize labor dropdown
+    const laborSelect = document.getElementById('laborSelectManual');
+    if(laborSelect && laborSelect.value) {
+      defaultLaborIdManual = laborSelect.value;
+    }
+
+    const nimInput = document.getElementById('nimInput');
+    if(nimInput) {
+      nimInput.addEventListener('blur', () => {
+        // Hide search results when clicking outside
+        setTimeout(() => {
+          document.getElementById('nimSearchResults').style.display = 'none';
+        }, 200);
+      });
+      
+      nimInput.addEventListener('focus', () => {
+        const query = nimInput.value.trim();
+        if(query.length > 0) {
+          document.getElementById('nimSearchResults').style.display = 'block';
+        }
+      });
+    }
+  });
+
+  // ==================== FACE RECOGNITION FUNCTIONS (EXISTING) ====================
   const video = document.getElementById('video');
   const statusText = document.getElementById('statusText');
   const detectionStatus = document.getElementById('detectionStatus');
@@ -1645,7 +2265,7 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
     })
     .then(response => response.json())
     .then(data => {
-      if(data.status === 'success' && data.students.length > 0) {
+      if(data.success && data.students && data.students.length > 0) {
         let html = '';
         data.students.forEach(student => {
           const initials = student.nama.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
