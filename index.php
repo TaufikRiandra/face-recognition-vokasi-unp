@@ -793,11 +793,12 @@ $total_unik = mysqli_fetch_assoc(mysqli_query($conn, $unique_visitors_query))['t
         <table class="table table-bordered table-hover">
           <thead>
             <tr>
-              <th width="5%">No</th>
-              <th width="30%">Nama</th>
-              <th width="15%">Tipe</th>
-              <th width="15%">Status</th>
-              <th width="35%">Waktu</th>
+              <th width="4%">No</th>
+              <th width="26%">Nama</th>
+              <th width="12%">NIM</th>
+              <th width="13%">Tipe</th>
+              <th width="12%">Status</th>
+              <th width="33%">Waktu</th>
             </tr>
           </thead>
           <tbody>
@@ -807,14 +808,21 @@ $total_unik = mysqli_fetch_assoc(mysqli_query($conn, $unique_visitors_query))['t
                 <td>
                   <div class="visitor-name">
                     <?php if($log['user_nama']): ?>
-                      <?= htmlspecialchars($log['user_nama']) . ' (' . htmlspecialchars($log['nim']) . ')' ?>
+                      <?= htmlspecialchars($log['user_nama']) ?>
                     <?php else: ?>
-                      <span style="color: #ef4444; font-style: italic;">deleted user (<?= htmlspecialchars($log['stored_user_nama'] ?? 'Unknown') ?>)</span>
+                      <span style="color: #ef4444; font-style: italic;"><?= htmlspecialchars($log['stored_user_nama'] ?? 'Unknown') ?></span>
                     <?php endif; ?>
                   </div>
                   <div class="visitor-type">
                     <i class="fas fa-graduation-cap"></i> Mahasiswa
                   </div>
+                </td>
+                <td>
+                  <?php if($log['user_nama']): ?>
+                    <span style="font-weight: 600; color: var(--text-secondary);"><?= htmlspecialchars($log['nim']) ?></span>
+                  <?php else: ?>
+                    <span style="color: #ef4444; font-style: italic;">-</span>
+                  <?php endif; ?>
                 </td>
                 <td>
                   <span class="badge badge-mahasiswa">Mahasiswa</span>

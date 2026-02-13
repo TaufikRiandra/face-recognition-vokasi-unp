@@ -14,6 +14,8 @@ if(isset($_GET['ajax']) && $_GET['ajax'] == '1') {
   $search = isset($_GET['search']) ? mysqli_real_escape_string($conn, $_GET['search']) : '';
   $selected_labor = isset($_GET['labor']) ? intval($_GET['labor']) : 3;
   $filter_date = isset($_GET['filter_date']) ? mysqli_real_escape_string($conn, $_GET['filter_date']) : '';
+  $date_from = isset($_GET['date_from']) ? mysqli_real_escape_string($conn, $_GET['date_from']) : '';
+  $date_to = isset($_GET['date_to']) ? mysqli_real_escape_string($conn, $_GET['date_to']) : '';
   
   // Pagination setup
   $items_per_page = 20;
@@ -31,8 +33,17 @@ if(isset($_GET['ajax']) && $_GET['ajax'] == '1') {
     $where_parts[] = "al.labor_id = $selected_labor";
   }
 
+  // Support both single date filter and date range
   if($filter_date != '') {
     $where_parts[] = "DATE(al.created_at) = '$filter_date'";
+  } else if($date_from != '' || $date_to != '') {
+    if($date_from != '' && $date_to != '') {
+      $where_parts[] = "DATE(al.created_at) BETWEEN '$date_from' AND '$date_to'";
+    } else if($date_from != '') {
+      $where_parts[] = "DATE(al.created_at) >= '$date_from'";
+    } else if($date_to != '') {
+      $where_parts[] = "DATE(al.created_at) <= '$date_to'";
+    }
   }
 
   $where_clause = count($where_parts) > 0 ? "WHERE " . implode(" AND ", $where_parts) : "";
@@ -86,7 +97,7 @@ if(isset($_GET['ajax']) && $_GET['ajax'] == '1') {
   if(count($attendance_logs) > 0) {
     $html .= '<div class="results-info"><strong>' . count($attendance_logs) . '</strong> data dari <strong>' . $total_records . '</strong> total data</div>';
     $html .= '<div class="table-responsive"><table class="table table-bordered table-hover">';
-    $html .= '<thead><tr><th width="5%">No</th><th width="25%">Nama</th><th width="15%">Tipe</th><th width="15%">Labor</th><th width="12%">Status</th><th width="28%">Waktu</th></tr></thead><tbody>';
+    $html .= '<thead><tr><th width="4%">No</th><th width="22%">Nama</th><th width="12%">NIM</th><th width="13%">Tipe</th><th width="13%">Labor</th><th width="12%">Status</th><th width="24%">Waktu</th></tr></thead><tbody>';
     
     $start_num = ($current_page - 1) * $items_per_page + 1;
     
@@ -96,14 +107,23 @@ if(isset($_GET['ajax']) && $_GET['ajax'] == '1') {
       $html .= '<td>';
       $html .= '<div class="visitor-name">';
       if($log['user_nama']) {
-        $html .= htmlspecialchars($log['user_nama']) . ' (' . htmlspecialchars($log['nim']) . ')';
+        $html .= htmlspecialchars($log['user_nama']);
       } else {
-        $html .= '<span style="color: #ef4444; font-style: italic;">deleted user (' . htmlspecialchars($log['stored_user_nama'] ?? 'Unknown') . ')</span>';
+        $html .= '<span style="color: #ef4444; font-style: italic;">' . htmlspecialchars($log['stored_user_nama'] ?? 'Unknown') . '</span>';
       }
       $html .= '</div>';
       $html .= '<div class="visitor-type">';
       $html .= '<i class="fas fa-graduation-cap"></i> Mahasiswa';
       $html .= '</div>';
+      $html .= '</td>';
+      
+      // Kolom NIM terpisah
+      $html .= '<td>';
+      if($log['user_nama']) {
+        $html .= '<span style="font-weight: 600; color: var(--text-secondary);">' . htmlspecialchars($log['nim']) . '</span>';
+      } else {
+        $html .= '<span style="color: #ef4444; font-style: italic;">-</span>';
+      }
       $html .= '</td>';
       
       $html .= '<td><span class="badge badge-mahasiswa">Mahasiswa</span></td>';
@@ -706,11 +726,15 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
           <?php endforeach; ?>
         </select>
       </div>
-      <div class="col-md-3 mb-3">
-        <label class="form-label" style="font-weight: 600; color: var(--text-primary); font-size: 13px;">Tanggal</label>
-        <input type="date" id="filterDate" class="form-control">
+      <div class="col-md-2 mb-3">
+        <label class="form-label" style="font-weight: 600; color: var(--text-primary); font-size: 13px;">Dari Tanggal</label>
+        <input type="date" id="filterDateFrom" class="form-control">
       </div>
-      <div class="col-md-3 mb-3">
+      <div class="col-md-2 mb-3">
+        <label class="form-label" style="font-weight: 600; color: var(--text-primary); font-size: 13px;">Sampai Tanggal</label>
+        <input type="date" id="filterDateTo" class="form-control">
+      </div>
+      <div class="col-md-2 mb-3">
         <label class="form-label" style="font-weight: 600; color: var(--text-primary); font-size: 13px;">&nbsp;</label>
         <a href="history.php" class="btn btn-secondary w-100">
           <i class="fas fa-redo"></i> Reset
@@ -751,14 +775,16 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
 function performSearch(page = 1) {
   const search = document.getElementById('searchInput').value;
   const labor = document.getElementById('laborSelect').value;
-  const filterDate = document.getElementById('filterDate').value;
+  const filterDateFrom = document.getElementById('filterDateFrom').value;
+  const filterDateTo = document.getElementById('filterDateTo').value;
 
   // Prepare query parameters
   const params = new URLSearchParams({
     ajax: '1',
     search: search,
     labor: labor,
-    filter_date: filterDate,
+    date_from: filterDateFrom,
+    date_to: filterDateTo,
     page: page
   });
 
@@ -804,7 +830,8 @@ function goToPage(page) {
 function exportToExcel() {
   const search = document.getElementById('searchInput').value;
   const labor = document.getElementById('laborSelect').value;
-  const filterDate = document.getElementById('filterDate').value;
+  const filterDateFrom = document.getElementById('filterDateFrom').value;
+  const filterDateTo = document.getElementById('filterDateTo').value;
   const button = event.target;
   const originalText = button.innerHTML;
   
@@ -813,7 +840,8 @@ function exportToExcel() {
     export: 'excel',
     search: search,
     labor: labor,
-    filter_date: filterDate
+    date_from: filterDateFrom,
+    date_to: filterDateTo
   });
   
   // Show loading message
@@ -834,7 +862,8 @@ function exportToExcel() {
 function exportToPDF() {
   const search = document.getElementById('searchInput').value;
   const labor = document.getElementById('laborSelect').value;
-  const filterDate = document.getElementById('filterDate').value;
+  const filterDateFrom = document.getElementById('filterDateFrom').value;
+  const filterDateTo = document.getElementById('filterDateTo').value;
   const button = event.target;
   const originalText = button.innerHTML;
   
@@ -843,7 +872,8 @@ function exportToPDF() {
     export: 'pdf',
     search: search,
     labor: labor,
-    filter_date: filterDate
+    date_from: filterDateFrom,
+    date_to: filterDateTo
   });
   
   // Show loading message
@@ -879,7 +909,11 @@ document.getElementById('laborSelect').addEventListener('change', function() {
   performSearch();
 });
 
-document.getElementById('filterDate').addEventListener('change', function() {
+document.getElementById('filterDateFrom').addEventListener('change', function() {
+  performSearch();
+});
+
+document.getElementById('filterDateTo').addEventListener('change', function() {
   performSearch();
 });
 
