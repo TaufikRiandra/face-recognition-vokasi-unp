@@ -1,6 +1,7 @@
 <?php
 session_start();
 include 'koneksi.php';
+include 'helpers_attendance.php';
 
 if(!isset($_SESSION['admin_id'])) {
   die("Unauthorized access");
@@ -34,7 +35,7 @@ if($filter_date != '') {
 
 $where_clause = count($where_parts) > 0 ? "WHERE " . implode(" AND ", $where_parts) : "";
 
-$query = "SELECT al.id, al.user_id, COALESCE(al.labor_id, 0) as labor_id, al.status, al.confidence_score, al.created_at, al.stored_user_nama, u.nama as user_nama, u.nim, l.nama as labor_nama FROM attendance_logs al LEFT JOIN users u ON al.user_id = u.id LEFT JOIN labor l ON al.labor_id = l.id $where_clause ORDER BY al.created_at ASC";
+$query = "SELECT al.id, al.user_id, COALESCE(al.labor_id, 0) as labor_id, al.status, al.confidence_score, al.keterangan, al.created_at, al.stored_user_nama, u.nama as user_nama, u.nim, l.nama as labor_nama FROM attendance_logs al LEFT JOIN users u ON al.user_id = u.id LEFT JOIN labor l ON al.labor_id = l.id $where_clause ORDER BY al.created_at ASC";
 
 $result = mysqli_query($conn, $query);
 if(!$result) {
@@ -74,8 +75,18 @@ function exportToPDF($data, $filter_text, $timestamp, $filter_date) {
     }
     
     $status_text = $log['status'] === 'IN' ? 'Masuk' : 'Keluar';
-    $status_color = $log['status'] === 'IN' ? '#4caf50' : '#f44336';
+    $status_color = '#4caf50'; // Hijau untuk IN dan OUT
     $status_display = '<span style="color:' . $status_color . ';font-weight:bold;">' . $status_text . '</span>';
+    
+    $keterangan = htmlspecialchars($log['keterangan'] ?? 'normal');
+    $keterangan_colors = [
+      'tepat waktu' => '#4caf50',     // Hijau
+      'terlambat' => '#f44336',       // Merah
+      'lembur' => '#ff9800',          // Orange
+      'normal' => '#999'              // Abu-abu
+    ];
+    $keterangan_color = $keterangan_colors[$keterangan] ?? '#666';
+    $keterangan_display = '<span style="color:' . $keterangan_color . ';font-weight:bold;">' . ucfirst($keterangan) . '</span>';
     
     $tanggal = date('d-m-Y', strtotime($log['created_at']));
     $waktu = date('H:i:s', strtotime($log['created_at']));
@@ -89,12 +100,13 @@ function exportToPDF($data, $filter_text, $timestamp, $filter_date) {
     $table_rows .= '<td style="border:1px solid #ccc;padding:8px;font-weight:bold;">' . $nim_display . '</td>';
     $table_rows .= '<td style="border:1px solid #ccc;padding:8px;">' . $nama_text . '</td>';
     $table_rows .= '<td style="border:1px solid #ccc;padding:8px;">' . $status_display . '</td>';
+    $table_rows .= '<td style="border:1px solid #ccc;padding:8px;">' . $keterangan_display . '</td>';
     $table_rows .= '<td style="border:1px solid #ccc;padding:8px;">' . $tanggal . '</td>';
     $table_rows .= '<td style="border:1px solid #ccc;padding:8px;">' . $waktu . '</td>';
     $table_rows .= '<td style="border:1px solid #ccc;padding:8px;">' . $labor_nama . '</td></tr>';
   }
   
-  $html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Riwayat Absensi</title><style>@media print{body{margin:0}}body{font-family:Calibri,Arial,sans-serif;font-size:11pt;margin:1in;line-height:1.5;color:#333}.header{text-align:center;margin-bottom:20px;border-bottom:3px solid #2B579A;padding-bottom:15px}.header h1{font-size:16pt;font-weight:bold;margin:0 0 5px 0;color:#2B579A}.header p{margin:5px 0 0 0;color:#666;font-size:10pt}.info-box{margin-bottom:20px;font-size:11pt;background-color:#f9f9f9;padding:12px;border-left:4px solid #2B579A}.info-row{margin:6px 0}.info-label{font-weight:bold;display:inline-block;width:150px;color:#2B579A}table{width:100%;border-collapse:collapse;margin-top:20px;font-size:10pt}th{background-color:#2B579A;color:white;padding:10px;text-align:left;border:1px solid #000;font-weight:bold}tr:nth-child(even){background-color:#f5f5f5}.signature-section{margin-top:80px;display:flex;justify-content:space-between;page-break-inside:avoid}.signature-box{width:45%}.signature-line{height:70px;border-bottom:2px solid #000;margin-bottom:10px}.signature-label{font-size:11pt;font-weight:bold;text-align:center}.signature-info{font-size:9pt;text-align:center;color:#666;margin-top:5px}.footer{margin-top:30px;text-align:center;font-size:9pt;color:#999;border-top:1px solid #ccc;padding-top:15px}</style></head><body><div class="header"><h1>Laporan Riwayat Absensi Pengunjung Labor</h1><p>Sistem Absensi Face Recognition</p><p>Dicetak: ' . $current_date . '</p></div><div class="info-box"><div class="info-row"><span class="info-label">Labor:</span> <strong>' . $labor_name . '</strong></div><div class="info-row"><span class="info-label">Tanggal Data:</span> <strong>' . $filter_date_display . '</strong></div><div class="info-row"><span class="info-label">Total Record:</span> <strong>' . $total . ' entries</strong></div></div><table><thead><tr><th style="width:5%;">No</th><th style="width:15%;">NIM</th><th style="width:22%;">Nama</th><th style="width:10%;">Status</th><th style="width:12%;">Tanggal</th><th style="width:12%;">Waktu</th><th style="width:12%;">Labor</th></tr></thead><tbody>' . $table_rows . '</tbody></table><div class="signature-section"><div class="signature-box"><div class="signature-label">Disiapkan oleh</div><div class="signature-line"></div><div class="signature-info">Nama & Tanggal</div></div><div class="signature-box"><div class="signature-label">Diketahui oleh</div><div class="signature-line"></div><div class="signature-info">Nama & Tanggal</div></div></div><div class="footer"><p>Dokumen ini secara otomatis dihasilkan oleh Sistem Absensi Face Recognition</p><p>&copy; ' . date('Y') . ' - Hak Cipta Dilindungi</p></div></body></html>';
+  $html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Riwayat Absensi</title><style>@media print{body{margin:0}}body{font-family:Calibri,Arial,sans-serif;font-size:11pt;margin:1in;line-height:1.5;color:#333}.header{text-align:center;margin-bottom:20px;border-bottom:3px solid #2B579A;padding-bottom:15px}.header h1{font-size:16pt;font-weight:bold;margin:0 0 5px 0;color:#2B579A}.header p{margin:5px 0 0 0;color:#666;font-size:10pt}.info-box{margin-bottom:20px;font-size:11pt;background-color:#f9f9f9;padding:12px;border-left:4px solid #2B579A}.info-row{margin:6px 0}.info-label{font-weight:bold;display:inline-block;width:150px;color:#2B579A}table{width:100%;border-collapse:collapse;margin-top:20px;font-size:10pt}th{background-color:#2B579A;color:white;padding:10px;text-align:left;border:1px solid #000;font-weight:bold}tr:nth-child(even){background-color:#f5f5f5}.signature-section{margin-top:80px;display:flex;justify-content:space-between;page-break-inside:avoid}.signature-box{width:45%}.signature-line{height:70px;border-bottom:2px solid #000;margin-bottom:10px}.signature-label{font-size:11pt;font-weight:bold;text-align:center}.signature-info{font-size:9pt;text-align:center;color:#666;margin-top:5px}.footer{margin-top:30px;text-align:center;font-size:9pt;color:#999;border-top:1px solid #ccc;padding-top:15px}</style></head><body><div class="header"><h1>Laporan Riwayat Absensi Pengunjung Labor</h1><p>Sistem Absensi Face Recognition</p><p>Dicetak: ' . $current_date . '</p></div><div class="info-box"><div class="info-row"><span class="info-label">Labor:</span> <strong>' . $labor_name . '</strong></div><div class="info-row"><span class="info-label">Tanggal Data:</span> <strong>' . $filter_date_display . '</strong></div><div class="info-row"><span class="info-label">Total Record:</span> <strong>' . $total . ' entries</strong></div></div><table><thead><tr><th style="width:4%;">No</th><th style="width:12%;">NIM</th><th style="width:18%;">Nama</th><th style="width:10%;">Status</th><th style="width:13%;">Keterangan</th><th style="width:10%;">Tanggal</th><th style="width:10%;">Waktu</th><th style="width:13%;">Labor</th></tr></thead><tbody>' . $table_rows . '</tbody></table><div class="signature-section"><div class="signature-box"><div class="signature-label">Disiapkan oleh</div><div class="signature-line"></div><div class="signature-info">Nama & Tanggal</div></div><div class="signature-box"><div class="signature-label">Diketahui oleh</div><div class="signature-line"></div><div class="signature-info">Nama & Tanggal</div></div></div><div class="footer"><p>Dokumen ini secara otomatis dihasilkan oleh Sistem Absensi Face Recognition</p><p>&copy; ' . date('Y') . ' - Hak Cipta Dilindungi</p></div></body></html>';
   
   header('Content-Type: text/html; charset=UTF-8');
   header('Content-Disposition: inline; filename="Riwayat_Absensi_' . $timestamp . '.html"');
@@ -117,22 +129,24 @@ function exportToExcel($data, $filter_text, $timestamp, $filter_date) {
   $output .= "Tanggal Filter," . ($filter_date ? date('d-m-Y', strtotime($filter_date)) : 'Semua Data') . "\n";
   $output .= "Tanggal Export," . date('d-m-Y H:i:s') . "\n";
   $output .= "Total Data," . count($data) . "\n";
-  $output .= "\nNo,NIM,Nama,Status,Tanggal,Waktu,Labor\n";
+  $output .= "\nNo,NIM,Nama,Status,Keterangan,Tanggal,Waktu,Labor\n";
   
   foreach($data as $index => $log) {
     $no = $index + 1;
     $nim = $log['nim'] ?? '-';
     $nama = $log['user_nama'] ? $log['user_nama'] : 'deleted user (' . ($log['stored_user_nama'] ?? 'Unknown') . ')';
     $status = $log['status'] === 'IN' ? 'Masuk' : 'Keluar';
+    $keterangan = ucfirst($log['keterangan'] ?? 'normal');
     $tanggal = date('d-m-Y', strtotime($log['created_at']));
     $waktu = date('H:i:s', strtotime($log['created_at']));
     $labor_nama = $log['labor_nama'] ?? '-';
     
     $nim = '"' . str_replace('"', '""', $nim) . '"';
     $nama = '"' . str_replace('"', '""', $nama) . '"';
+    $keterangan = '"' . str_replace('"', '""', $keterangan) . '"';
     $labor_nama = '"' . str_replace('"', '""', $labor_nama) . '"';
     
-    $output .= "$no,$nim,$nama,$status,$tanggal,$waktu,$labor_nama\n";
+    $output .= "$no,$nim,$nama,$status,$keterangan,$tanggal,$waktu,$labor_nama\n";
   }
   
   header('Content-Type: application/vnd.ms-excel; charset=UTF-8');

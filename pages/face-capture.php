@@ -1609,6 +1609,11 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
   }
 
   function submitAttendanceEntry(studentId, laborId, status) {
+    // Validate time before submission
+    if(!isAttendanceTimeValid(status)) {
+      return;
+    }
+    
     showToast('Menyimpan data absensi...', 'info');
     
     const formData = new FormData();
@@ -1726,24 +1731,99 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
   // Flag untuk pause capture saat tunggu user approval
   let isCapturingPaused = false; // Pause setiap frame dan tunggu user lanjutkan
 
-  // Load Face API Models
-  async function loadModels() {
+  // Web Worker untuk load model tanpa block UI
+  let modelWorker;
+
+  // Load Face API Models dengan Web Worker
+  function loadModelsWithWorker() {
     const MODEL_URL = '../models/';
     
-    console.log("Memuat model dari:", MODEL_URL);
+    console.log("🔄 Menggunakan Web Worker untuk load model...");
+    updateStatus('loading', '⏳ Memuat model AI di background... UI tetap responsif', false);
+    
+    // Tentukan tipe worker (local atau fallback)
+    const workerPath = '../asset/model-loader-worker.js';
     
     try {
+      // Buat worker
+      modelWorker = new Worker(workerPath);
+      
+      // Handle pesan dari worker
+      modelWorker.onmessage = (event) => {
+        const { status, message } = event.data;
+        
+        if(status === 'success') {
+          console.log("✅ Worker: " + message);
+          isModelLoaded = true;
+          updateStatus('ready', '✅ Model siap! Arahkan wajah Anda ke kamera.', false);
+          startVideo();
+          modelWorker.terminate(); // Stop worker setelah selesai
+        } else if(status === 'error') {
+          console.warn("⚠️ Worker gagal, fallback ke metode lama:", message);
+          loadModelsDirectly();
+        }
+      };
+      
+      // Handle worker error
+      modelWorker.onerror = (error) => {
+        console.error("❌ Worker error:", error);
+        loadModelsDirectly();
+      };
+      
+      // Kirim pesan ke worker
+      modelWorker.postMessage({
+        action: 'loadModels',
+        modelUrl: MODEL_URL
+      });
+      
+    } catch(err) {
+      console.warn("Worker tidak tersedia, gunakan metode langsung:", err);
+      loadModelsDirectly();
+    }
+  }
+
+  // Fallback: Load model langsung di main thread
+  async function loadModelsDirectly() {
+    let MODEL_URL = '../models/';
+    
+    console.log("📌 Load model langsung (tanpa worker)");
+    updateStatus('loading', 'Memuat model AI... Harap tunggu (2-3 detik)', false);
+    
+    try {
+      // Coba load dari folder local dulu
       await Promise.all([
         faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
         faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
         faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
       ]);
+      
+      console.log("✅ Model berhasil dimuat dari server local");
       isModelLoaded = true;
       updateStatus('ready', 'Siap untuk pemindaian wajah. Arahkan wajah Anda ke kamera.', false);
       startVideo();
     } catch (err) {
-      console.error("Gagal load model:", err);
-      updateStatus('error', 'Gagal memuat model face recognition. Periksa koneksi atau refresh halaman.', false);
+      console.warn("Model lokal tidak tersedia, coba fallback ke CDN:", err);
+      
+      // Fallback: Load dari CDN jika local tidak tersedia
+      MODEL_URL = 'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/models/';
+      console.log("📡 Fallback ke CDN:", MODEL_URL);
+      updateStatus('loading', 'Mengunduh model dari internet... (ini lebih lambat)', false);
+      
+      try {
+        await Promise.all([
+          faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
+          faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+          faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+        ]);
+        
+        console.log("✅ Model berhasil dimuat dari CDN");
+        isModelLoaded = true;
+        updateStatus('ready', 'Model selesai dimuat dari internet. Silahkan mulai pemindaian wajah.', false);
+        startVideo();
+      } catch (errCDN) {
+        console.error("❌ Gagal load model dari kedua sumber:", errCDN);
+        updateStatus('error', 'Gagal memuat model face recognition. Hubungi administrator untuk menjalankan setup-models.php', false);
+      }
     }
   }
 
@@ -2067,6 +2147,12 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
 
   // Submit Attendance
   function submitAttendance() {
+    // Validate time before submission
+    if(!isAttendanceTimeValid(selectedStatus)) {
+      setButtonLoading(false);
+      return;
+    }
+    
     const formData = new FormData();
     formData.append('action', 'submit_attendance');
     formData.append('status', selectedStatus);
@@ -2166,6 +2252,30 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
       captureBtn.classList.remove('loading');
       captureBtn.disabled = false;
     }
+  }
+
+  // Validate attendance time window
+  function isAttendanceTimeValid(status) {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const currentTime = hours + ':' + minutes;
+    
+    if(status === 'IN') {
+      // Masuk: mulai dari 06:00 (tanpa batas atas)
+      if(currentTime < '06:00') {
+        showToast('❌ Absensi dimulai dari jam 06:00', 'error');
+        return false;
+      }
+    } else if(status === 'OUT') {
+      // Pulang: mulai dari 16:00 (tanpa batas atas)
+      if(currentTime < '16:00') {
+        showToast('❌ Absensi pulang dimulai dari jam 16:00', 'error');
+        return false;
+      }
+    }
+    
+    return true;
   }
 
   // Show Toast Message
@@ -2643,7 +2753,7 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
 
   // Initialize
   window.addEventListener('load', () => {
-    loadModels();
+    loadModelsWithWorker(); // Gunakan Web Worker untuk non-blocking load
   });
 </script>
 

@@ -38,3 +38,5 @@ if(!$a){
     </a>
   </div>
 </div>
+
+<?php include 'check-models.php'; ?>

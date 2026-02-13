@@ -2,12 +2,14 @@
 // Check if this is an AJAX request FIRST (jangan include header untuk AJAX)
 if(!isset($_GET['ajax']) || $_GET['ajax'] != '1') {
   include '../asset/header.php';
+  include '../backend/helpers_attendance.php';
 }
 
 // AJAX Request Handler
 if(isset($_GET['ajax']) && $_GET['ajax'] == '1') {
   // Include connection only (skip header output)
   include '../backend/koneksi.php';
+  include '../backend/helpers_attendance.php';
   header('Content-Type: application/json');
   
   // Get filter parameters
@@ -70,6 +72,7 @@ if(isset($_GET['ajax']) && $_GET['ajax'] == '1') {
       COALESCE(al.labor_id, 0) as labor_id,
       al.status,
       al.confidence_score,
+      al.keterangan,
       al.created_at,
       al.stored_user_nama,
       u.nama as user_nama,
@@ -97,7 +100,7 @@ if(isset($_GET['ajax']) && $_GET['ajax'] == '1') {
   if(count($attendance_logs) > 0) {
     $html .= '<div class="results-info"><strong>' . count($attendance_logs) . '</strong> data dari <strong>' . $total_records . '</strong> total data</div>';
     $html .= '<div class="table-responsive"><table class="table table-bordered table-hover">';
-    $html .= '<thead><tr><th width="4%">No</th><th width="22%">Nama</th><th width="12%">NIM</th><th width="13%">Tipe</th><th width="13%">Labor</th><th width="12%">Status</th><th width="24%">Waktu</th></tr></thead><tbody>';
+    $html .= '<thead><tr><th width="4%">No</th><th width="20%">Nama</th><th width="11%">NIM</th><th width="11%">Tipe</th><th width="12%">Labor</th><th width="10%">Status</th><th width="15%">Keterangan</th><th width="17%">Waktu</th></tr></thead><tbody>';
     
     $start_num = ($current_page - 1) * $items_per_page + 1;
     
@@ -135,6 +138,8 @@ if(isset($_GET['ajax']) && $_GET['ajax'] == '1') {
       } else {
         $html .= '<td><span class="badge-out"><i class="fas fa-arrow-right-from-bracket"></i> Keluar</span></td>';
       }
+      
+      $html .= '<td>' . getKeteranganHTML($log['keterangan'] ?? 'normal') . '</td>';
       
       $html .= '<td><div class="time-badge"><i class="fas fa-calendar"></i> ' . date('d-m-Y', strtotime($log['created_at'])) . '<br><i class="fas fa-clock"></i> ' . date('H:i:s', strtotime($log['created_at'])) . '</div></td>';
       $html .= '</tr>';
@@ -480,7 +485,7 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
   }
 
   .badge-out {
-    background-color: var(--danger);
+    background-color: var(--success);
     color: white;
     padding: 6px 12px;
     border-radius: 6px;

@@ -1,6 +1,7 @@
 <?php
 session_start();
 include 'koneksi.php';
+include 'helpers_attendance.php';
 
 header('Content-Type: application/json');
 
@@ -79,6 +80,13 @@ else if($action === 'save_embedding') {
     exit;
   }
 
+  // VALIDASI WAKTU SERVER-SIDE (tidak bisa dimanipulasi dari client)
+  $time_validation = validateAttendanceTime($status);
+  if(!$time_validation['valid']) {
+    echo json_encode(['status' => 'error', 'message' => $time_validation['message']]);
+    exit;
+  }
+
   // Check if user exists dan ambil nama user
   $user_check = mysqli_query($conn, "SELECT id, nama FROM users WHERE id = $user_id");
   if(mysqli_num_rows($user_check) === 0) {
@@ -99,10 +107,13 @@ else if($action === 'save_embedding') {
   if(mysqli_query($conn, $insert_query)) {
     $embedding_id = mysqli_insert_id($conn);
 
-    // Also save to attendance_logs dengan stored_user_nama
+    // Also save to attendance_logs dengan stored_user_nama dan keterangan
+    $keterangan = hitungKeterangan($status, date('Y-m-d H:i:s'), $labor_id, $conn);
+    $keterangan_escaped = mysqli_real_escape_string($conn, $keterangan);
+    
     $attendance_query = "
-      INSERT INTO attendance_logs (user_id, labor_id, status, confidence_score, stored_user_nama, created_at)
-      VALUES ($user_id, $labor_id, '$status', $confidence, '$user_nama_escaped', NOW())
+      INSERT INTO attendance_logs (user_id, labor_id, status, confidence_score, stored_user_nama, keterangan, created_at)
+      VALUES ($user_id, $labor_id, '$status', $confidence, '$user_nama_escaped', '$keterangan_escaped', NOW())
     ";
 
     if(mysqli_query($conn, $attendance_query)) {
@@ -134,6 +145,14 @@ else if($action === 'submit_attendance') {
 
   if(!$user_id || !$labor_id) {
     echo json_encode(['status' => 'error', 'message' => 'Parameter tidak lengkap']);
+    exit;
+  }
+
+  // VALIDASI WAKTU SERVER-SIDE (tidak bisa dimanipulasi dari client)
+  // Menggunakan waktu WIB dari server dengan NTP sync
+  $time_validation = validateAttendanceTime($status);
+  if(!$time_validation['valid']) {
+    echo json_encode(['status' => 'error', 'message' => $time_validation['message']]);
     exit;
   }
 
@@ -179,10 +198,13 @@ else if($action === 'submit_attendance') {
     exit;
   }
 
-  // Insert attendance log dengan stored_user_nama
+  // Insert attendance log dengan stored_user_nama dan keterangan
+  $keterangan = hitungKeterangan($status, date('Y-m-d H:i:s'), $labor_id, $conn);
+  $keterangan_escaped = mysqli_real_escape_string($conn, $keterangan);
+  
   $attendance_query = "
-    INSERT INTO attendance_logs (user_id, labor_id, status, confidence_score, stored_user_nama, created_at)
-    VALUES ($user_id, $labor_id, '$status', $confidence, '$user_nama_escaped', NOW())
+    INSERT INTO attendance_logs (user_id, labor_id, status, confidence_score, stored_user_nama, keterangan, created_at)
+    VALUES ($user_id, $labor_id, '$status', $confidence, '$user_nama_escaped', '$keterangan_escaped', NOW())
   ";
 
   if(mysqli_query($conn, $attendance_query)) {

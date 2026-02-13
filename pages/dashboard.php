@@ -1,5 +1,6 @@
 <?php
 include '../asset/header.php';
+include '../backend/helpers_attendance.php';
 
 // Get today's date
 $today = date('Y-m-d');
@@ -64,6 +65,7 @@ $query = "
     COALESCE(al.labor_id, 0) as labor_id,
     al.status,
     al.confidence_score,
+    al.keterangan,
     al.created_at,
     al.stored_user_nama,
     u.nama as user_nama,
@@ -342,7 +344,7 @@ $total_unik = mysqli_fetch_assoc(mysqli_query($conn, $unique_visitors_query))['t
   }
 
   .badge-out {
-    background-color: var(--danger);
+    background-color: var(--success);
     color: white;
     padding: 6px 12px;
     border-radius: 6px;
@@ -794,11 +796,12 @@ $total_unik = mysqli_fetch_assoc(mysqli_query($conn, $unique_visitors_query))['t
           <thead>
             <tr>
               <th width="4%">No</th>
-              <th width="26%">Nama</th>
-              <th width="12%">NIM</th>
-              <th width="13%">Tipe</th>
-              <th width="12%">Status</th>
-              <th width="33%">Waktu</th>
+              <th width="24%">Nama</th>
+              <th width="11%">NIM</th>
+              <th width="10%">Tipe</th>
+              <th width="10%">Status</th>
+              <th width="17%">Keterangan</th>
+              <th width="24%">Waktu</th>
             </tr>
           </thead>
           <tbody>
@@ -837,6 +840,9 @@ $total_unik = mysqli_fetch_assoc(mysqli_query($conn, $unique_visitors_query))['t
                       <i class="fas fa-arrow-right-from-bracket"></i> Keluar
                     </span>
                   <?php endif; ?>
+                </td>
+                <td>
+                  <?= getKeteranganHTML($log['keterangan'] ?? 'normal') ?>
                 </td>
                 <td>
                   <div class="time-badge">
