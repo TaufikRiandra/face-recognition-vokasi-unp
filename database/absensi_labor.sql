@@ -33,6 +33,8 @@ CREATE TABLE IF NOT EXISTS `admin` (
 INSERT INTO `admin` (`id`, `nama`, `username`, `password`) VALUES
 	(1, 'admin', 'admin', '$2a$12$j9Q0477gv5CcqOFloYyOp.CyMnJGFkk9W2HcRS6TvW0XHtVR36jnm');
 
+--password: admintefa123
+
 -- Dumping structure for table absensi_labor.attendance_logs
 CREATE TABLE IF NOT EXISTS `attendance_logs` (
   `id` int NOT NULL AUTO_INCREMENT,
@@ -100,7 +102,67 @@ CREATE TABLE IF NOT EXISTS `users` (
   UNIQUE KEY `nim` (`nim`)
 ) ENGINE=InnoDB AUTO_INCREMENT=34 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Dumping data for table absensi_labor.users: ~3 rows (approximately)
+-- Dumping data for table absensi_labor.users: ~0 rows (approximately)
+INSERT INTO `users` (`id`, `nama`, `nim`, `is_active`, `role`, `created_at`, `updated_at`) VALUES
+	(36, 'Khoirun Nisa', '24342058', 1, 'mahasiswa', '2026-02-13 17:21:23', '2026-02-13 17:21:23'),
+	(37, 'Shofi Nurindah', '23342028', 1, 'mahasiswa', '2026-02-13 17:21:36', '2026-02-13 17:21:36'),
+	(38, 'Ahmad Daffa Rahmadhan', '23342030', 1, 'mahasiswa', '2026-02-13 17:21:52', '2026-02-13 17:21:52'),
+	(39, 'Muhammad Razaq', '23342026', 1, 'mahasiswa', '2026-02-13 17:22:05', '2026-02-13 17:22:05'),
+	(40, 'Ihsan Gani', '23342022', 1, 'mahasiswa', '2026-02-13 17:22:20', '2026-02-13 17:22:20'),
+	(41, 'Muhammad Rabbil Gazali', '23342036', 1, 'mahasiswa', '2026-02-13 17:22:57', '2026-02-13 17:22:57'),
+	(42, 'Muhammad Ridwan', '23342038', 1, 'mahasiswa', '2026-02-13 17:23:07', '2026-02-13 17:23:07'),
+	(43, 'Fayruj Shaleh.G', '23342019', 1, 'mahasiswa', '2026-02-13 17:23:25', '2026-02-13 17:23:25'),
+	(44, 'Wido Pratama Arulsa', '23342042', 1, 'mahasiswa', '2026-02-13 17:23:44', '2026-02-13 17:23:44'),
+	(45, 'Febri Kurnia', '24342024', 1, 'mahasiswa', '2026-02-13 17:24:06', '2026-02-13 17:24:06'),
+	(46, 'Syaefinda Thysa Wafiqah', '24342015', 1, 'mahasiswa', '2026-02-13 17:24:22', '2026-02-13 17:24:22'),
+	(47, 'Hazel Winanda Attaillah', '24342027', 1, 'mahasiswa', '2026-02-13 17:25:46', '2026-02-13 17:25:46'),
+	(48, 'Muhamad Aziz Faqih', '24342029', 1, 'mahasiswa', '2026-02-13 17:25:58', '2026-02-13 17:25:58'),
+	(49, 'Cahyo Viswanto', '24342022', 1, 'mahasiswa', '2026-02-13 17:26:09', '2026-02-13 17:26:09'),
+	(50, 'Varqa Ali Husein', '24342059', 1, 'mahasiswa', '2026-02-13 17:26:19', '2026-02-13 17:26:19'),
+	(51, 'Aisyah Qoni\'ah', '24342043', 1, 'mahasiswa', '2026-02-13 17:29:05', '2026-02-13 17:29:05'),
+	(52, 'Muhammad Abdurrachman Suddesh', '24342030', 1, 'mahasiswa', '2026-02-13 17:29:18', '2026-02-13 17:29:18'),
+	(53, 'Siti Fadillah Sallamah', '25342015', 1, 'mahasiswa', '2026-02-13 17:29:30', '2026-02-13 17:29:30'),
+	(54, 'Aisya Putri Iqbal', '25342017', 1, 'mahasiswa', '2026-02-13 17:29:42', '2026-02-13 17:29:42'),
+	(55, 'Diego Darulhuda', '24342023', 1, 'mahasiswa', '2026-02-13 17:29:53', '2026-02-13 17:29:53'),
+	(56, 'Devi Afrida', '24342002', 1, 'mahasiswa', '2026-02-13 17:32:56', '2026-02-13 17:32:56'),
+	(57, 'Habdul Rhauf', '25342006', 1, 'mahasiswa', '2026-02-13 17:34:20', '2026-02-13 17:34:20'),
+	(58, 'Muhammad Ryan Aswin', '25342037', 1, 'mahasiswa', '2026-02-13 17:34:37', '2026-02-13 17:34:37'),
+	(59, 'Bagiz Muzaky', '24342048', 1, 'mahasiswa', '2026-02-13 17:35:02', '2026-02-13 17:35:02'),
+	(60, 'Mhd.Rahma Putra', '25342032', 1, 'mahasiswa', '2026-02-13 17:35:16', '2026-02-13 17:35:16'),
+	(61, 'Danu Yuldi Putra', '25342022', 1, 'mahasiswa', '2026-02-13 17:35:34', '2026-02-13 17:35:34'),
+	(62, 'Haris Rahman', '25342009', 1, 'mahasiswa', '2026-02-13 17:35:49', '2026-02-13 17:35:49'),
+	(63, 'Reihan Permana Duta', '25342038', 1, 'mahasiswa', '2026-02-13 17:36:02', '2026-02-13 17:36:02'),
+	(64, 'Umar Ahmad Mukhlas', '24342016', 1, 'mahasiswa', '2026-02-13 17:36:19', '2026-02-13 17:36:19'),
+	(65, 'Ghauts El Yorica', '25342005', 1, 'mahasiswa', '2026-02-13 17:36:39', '2026-02-13 17:36:39'),
+	(66, 'Nabila Akhdan Syaharani', '24342012', 1, 'mahasiswa', '2026-02-13 17:36:55', '2026-02-13 17:36:55'),
+	(67, 'Azra Anati Lindra', '24342021', 1, 'mahasiswa', '2026-02-13 17:37:10', '2026-02-13 17:37:10'),
+	(68, 'Divani Aura Sandi', '24342040', 1, 'mahasiswa', '2026-02-13 17:37:25', '2026-02-13 17:37:25'),
+	(69, 'Adelia', '24342001', 1, 'mahasiswa', '2026-02-13 17:37:41', '2026-02-13 17:37:41'),
+	(70, 'Selfia', '24342014', 1, 'mahasiswa', '2026-02-13 17:37:56', '2026-02-13 17:37:56'),
+	(71, 'M Zuhdi Abdillah', '25342059', 1, 'mahasiswa', '2026-02-13 17:38:10', '2026-02-13 17:38:10'),
+	(72, 'Anisa Julita Fitri', '23342013', 1, 'mahasiswa', '2026-02-13 17:38:26', '2026-02-13 17:38:26'),
+	(73, 'Dhiya Ulhaq', '24342003', 1, 'mahasiswa', '2026-02-13 17:38:41', '2026-02-13 17:38:41'),
+	(74, 'Fajri Hidayat', '25342024', 1, 'mahasiswa', '2026-02-13 17:38:55', '2026-02-13 17:38:55'),
+	(75, 'Mohammad Danish Hakim', '24342064', 1, 'mahasiswa', '2026-02-13 17:39:11', '2026-02-13 17:39:11'),
+	(76, 'Aurora Titania', '23342031', 1, 'mahasiswa', '2026-02-13 17:39:23', '2026-02-13 17:39:23'),
+	(77, 'Alya Nabila Athifa', '24342018', 1, 'mahasiswa', '2026-02-13 17:39:38', '2026-02-13 17:39:38'),
+	(78, 'Kevin Yumiko Alfarisi', '25342030', 1, 'mahasiswa', '2026-02-13 17:39:51', '2026-02-13 17:39:51'),
+	(79, 'Alfa Bintang Fauzan', '25342019', 1, 'mahasiswa', '2026-02-13 17:40:10', '2026-02-13 17:40:10'),
+	(80, 'Humairah Izzah Qonita', '23342021', 1, 'mahasiswa', '2026-02-13 17:40:25', '2026-02-13 17:40:25'),
+	(81, 'Imam Maulana Siddiq', '25342028', 1, 'mahasiswa', '2026-02-13 17:40:40', '2026-02-13 17:40:40'),
+	(82, 'Khairani Abdul Putri', '23342023', 1, 'mahasiswa', '2026-02-13 17:40:53', '2026-02-13 17:40:53'),
+	(83, 'Muhammad Regio', '23342029', 1, 'mahasiswa', '2026-02-13 17:41:10', '2026-02-13 17:41:10'),
+	(84, 'Muhammad Fauzan', '23342009', 1, 'mahasiswa', '2026-02-13 17:41:22', '2026-02-13 17:41:22'),
+	(85, 'Muhammad Fikri Assakhy', '23342043', 1, 'mahasiswa', '2026-02-13 17:41:41', '2026-02-13 17:41:41'),
+	(86, 'Taufik Akbar', '24342068', 1, 'mahasiswa', '2026-02-13 17:41:55', '2026-02-13 17:41:55'),
+	(87, 'Faras Aprilsany', '23342017', 1, 'mahasiswa', '2026-02-13 17:42:09', '2026-02-13 17:42:09'),
+	(88, 'Muhammad Dani', '25342076', 1, 'mahasiswa', '2026-02-13 17:42:22', '2026-02-13 17:42:22'),
+	(89, 'M Ridho Aldian', '25342067', 1, 'mahasiswa', '2026-02-13 17:42:40', '2026-02-13 17:42:40'),
+	(90, 'Khindy Adham Syahladi', '25342057', 1, 'mahasiswa', '2026-02-13 17:43:13', '2026-02-13 17:43:13'),
+	(91, 'Asyiva Putri Wisna', '24342019', 1, 'mahasiswa', '2026-02-13 17:43:29', '2026-02-13 17:43:29'),
+	(92, 'Afifah Nur Fitri', '24342017', 1, 'mahasiswa', '2026-02-13 17:43:45', '2026-02-13 17:43:45'),
+	(93, 'Angelica Merfin Gulo', '24342039', 1, 'mahasiswa', '2026-02-13 17:44:00', '2026-02-13 17:44:00'),
+	(94, 'Najla Putri Rahmadani', '24342032', 1, 'mahasiswa', '2026-02-13 17:44:17', '2026-02-13 17:44:17');
 
 /*!40103 SET TIME_ZONE=IFNULL(@OLD_TIME_ZONE, 'system') */;
 /*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;

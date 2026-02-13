@@ -1366,8 +1366,13 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
         </div>
 
         <div class="control-group">
-          <label class="control-label"><i class="fas fa-id-card"></i> Nomor Induk Mahasiswa (NIM)</label>
-          <input type="text" id="nimInput" class="form-input-manual" placeholder="Masukkan NIM mahasiswa..." maxlength="20" onkeyup="searchStudentByNIM(this.value)" autocomplete="off">
+          <label class="control-label"><i class="fas fa-id-card"></i> Cari Mahasiswa (NIM atau Nama)</label>
+          <div style="position: relative;">
+            <input type="text" id="nimInput" class="form-input-manual" placeholder="Cari berdasarkan NIM atau Nama..." maxlength="50" onkeyup="searchStudentByNIM(this.value)" autocomplete="off">
+            <!-- Search Results Dropdown -->
+            <div id="nimSearchResults" class="search-results-dropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-top: none; max-height: 250px; overflow-y: auto; z-index: 100; border-radius: 0 0 8px 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            </div>
+          </div>
         </div>
 
         <!-- User Info from NIM (AJAX) -->
@@ -1379,9 +1384,6 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
                 <h3 id="manualUserName">-</h3>
                 <p id="manualUserRole">Mahasiswa</p>
               </div>
-            </div>
-            <div id="multipleDataBadge" style="display: none; background: var(--danger); color: white; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; align-self: flex-start; margin-top: 5px;">
-              <i class="fas fa-exclamation-circle"></i> Ada <span id="multipleDataCount">2</span> data
             </div>
           </div>
           <div class="user-detail-row">
@@ -1517,22 +1519,23 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
 
   // Debounce search timeout
   let searchNimTimeout = null;
-  let toastTimeout = null;  // Timeout untuk toast notification
+  let searchResultsData = []; // Store student data for results
+  let isSubmittingManual = false; // Prevent double submit
 
   function searchStudentByNIM(query) {
     const userInfoCard = document.getElementById('manualUserInfoCard');
-    const multipleDataBadge = document.getElementById('multipleDataBadge');
+    const searchResultsDiv = document.getElementById('nimSearchResults');
     
     query = query.trim();
     
     // Clear previous timeouts
     if(searchNimTimeout) clearTimeout(searchNimTimeout);
-    if(toastTimeout) clearTimeout(toastTimeout);  // Clear toast timeout jika user ketik ulang
     
     if(query.length < 1) {
       userInfoCard.style.display = 'none';
+      searchResultsDiv.style.display = 'none';
       selectedNIMStudent = null;
-      hasMultipleStudents = false;
+      searchResultsData = [];
       validateManualForm();
       return;
     }
@@ -1543,61 +1546,105 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
         .then(response => response.json())
         .then(data => {
           if(data.success && data.students && data.students.length > 0) {
-            // Ambil data pertama (paling match)
-            const student = data.students[0];
+            // Store data untuk reference
+            searchResultsData = data.students;
             
-            // Update data ke card
-            selectedNIMStudent = {
-              id: student.id,
-              nama: student.nama,
-              nim: student.nim
-            };
+            // Tampilkan dropdown list hasil pencarian
+            let html = '';
+            data.students.forEach((student, index) => {
+              html += `
+                <div class="search-result-item" data-index="${index}" style="padding: 12px 16px; border-bottom: 1px solid #eee; cursor: pointer; transition: background 0.2s;">
+                  <div style="font-weight: 600; color: #333; margin-bottom: 3px;">
+                    ${student.nama}
+                  </div>
+                  <div style="font-size: 12px; color: #666;">
+                    <i class="fas fa-id-card"></i> ${student.nim}
+                  </div>
+                </div>
+              `;
+            });
             
-            document.getElementById('manualUserName').textContent = student.nama || '-';
-            document.getElementById('manualUserNim').textContent = student.nim || '-';
-            document.getElementById('manualUserAvatar').textContent = (student.nama || 'U').charAt(0).toUpperCase();
+            searchResultsDiv.innerHTML = html;
+            searchResultsDiv.style.display = 'block';
             
-            // Tampilkan indicator dan set flag jika ada lebih dari 1 data
-            if(data.students.length > 1) {
-              hasMultipleStudents = true;
-              multipleDataBadge.style.display = 'block';
-              document.getElementById('multipleDataCount').textContent = data.students.length;
+            // Add click event listener dengan event delegation
+            searchResultsDiv.querySelectorAll('.search-result-item').forEach(item => {
+              item.addEventListener('click', function() {
+                const index = parseInt(this.getAttribute('data-index'));
+                const student = searchResultsData[index];
+                selectStudentFromSearch(student.id, student.nim, student.nama);
+              });
               
-              // Show toast notification dengan jeda 3 detik setelah user selesai mengetik
-              toastTimeout = setTimeout(() => {
-                showToast('⚠️ Ditemukan ' + data.students.length + ' data yang mirip. Harap periksa kembali dan masukkan NIM yang lebih spesifik.', 'error');
-              }, 3000);  // 3 detik delay
-            } else {
-              hasMultipleStudents = false;
-              multipleDataBadge.style.display = 'none';
-            }
-            
-            // Tampilkan card
-            userInfoCard.style.display = 'block';
+              item.addEventListener('mouseover', function() {
+                this.style.backgroundColor = '#f5f5f5';
+              });
+              item.addEventListener('mouseout', function() {
+                this.style.backgroundColor = 'transparent';
+              });
+            });
           } else {
-            userInfoCard.style.display = 'none';
+            searchResultsDiv.innerHTML = '<div style="padding: 12px 16px; color: #999; text-align: center;">Tidak ada hasil</div>';
+            searchResultsDiv.style.display = 'block';
             selectedNIMStudent = null;
-            hasMultipleStudents = false;
+            userInfoCard.style.display = 'none';
+            searchResultsData = [];
           }
           validateManualForm();
         })
         .catch(err => {
           console.error('Error:', err);
+          searchResultsDiv.style.display = 'none';
           userInfoCard.style.display = 'none';
           selectedNIMStudent = null;
-          hasMultipleStudents = false;
+          searchResultsData = [];
           validateManualForm();
         });
     }, 300); // Debounce 300ms
   }
 
+  function selectStudentFromSearch(studentId, nim, nama) {
+    // Set selected student
+    selectedNIMStudent = {
+      id: studentId,
+      nama: nama,
+      nim: nim
+    };
+
+    // Update input field
+    document.getElementById('nimInput').value = `${nim} - ${nama}`;
+
+    // Hide dropdown
+    document.getElementById('nimSearchResults').style.display = 'none';
+
+    // Update dan tampilkan user info card
+    document.getElementById('manualUserName').textContent = nama;
+    document.getElementById('manualUserNim').textContent = nim;
+    document.getElementById('manualUserAvatar').textContent = nama.charAt(0).toUpperCase();
+    document.getElementById('manualUserInfoCard').style.display = 'block';
+
+    validateManualForm();
+  }
+
   async function submitManualAttendance() {
+    // Prevent double submit dengan double-check
+    if(isSubmittingManual) {
+      console.log('[submitManualAttendance] Already submitting, preventing double submit');
+      return;
+    }
+
     const laborId = document.getElementById('laborSelectManual').value;
     
     if(!selectedNIMStudent || !selectedStatusManual) {
       showToast('Lengkapi semua data terlebih dahulu', 'error');
       return;
     }
+
+    console.log('[submitManualAttendance] Starting submission - Student:', selectedNIMStudent.id, 'Status:', selectedStatusManual);
+
+    // Set flag dan disable button BEFORE any async operations
+    isSubmittingManual = true;
+    const submitBtn = document.getElementById('submitManualBtn');
+    submitBtn.disabled = true;
 
     // Submit attendance
     submitAttendanceEntry(selectedNIMStudent.id, laborId, selectedStatusManual);
@@ -1611,10 +1658,10 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
   function submitAttendanceEntry(studentId, laborId, status) {
     // Validate time before submission
     if(!isAttendanceTimeValid(status)) {
+      isSubmittingManual = false;
+      document.getElementById('submitManualBtn').disabled = false;
       return;
     }
-    
-    showToast('Menyimpan data absensi...', 'info');
     
     const formData = new FormData();
     formData.append('action', 'submit_attendance');
@@ -1623,23 +1670,67 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
     formData.append('status', status);
     formData.append('confidence', 0.95);
     
+    let hasSuccessfulResponse = false; // Track if we got a success response
+    
     fetch('./../backend/process_attendance.php', {
       method: 'POST',
       body: formData
     })
-    .then(response => response.json())
+    .then(response => {
+      console.log('[submitManualAttendance] Response status:', response.status, 'ok:', response.ok);
+      // Check if response is OK (status 200-299)
+      if(!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    })
     .then(data => {
-      if(data.status === 'success') {
-        const studentName = selectedNIMStudent ? selectedNIMStudent.nama : 'Mahasiswa';
-        showToast('Absensi berhasil disimpan! ' + status + ' dicatat untuk ' + studentName, 'success');
-        clearManualForm();
-      } else {
-        showToast(data.message || 'Gagal menyimpan absensi', 'error');
+      try {
+        console.log('[submitManualAttendance] Response data:', data);
+        
+        if(!data) {
+          throw new Error('Invalid response data');
+        }
+        
+        if(data.status === 'success') {
+          hasSuccessfulResponse = true;
+          isSubmittingManual = false;
+          const studentName = selectedNIMStudent ? selectedNIMStudent.nama : 'Mahasiswa';
+          console.log('[submitManualAttendance] Success response, showing toast');
+          showToast('✓ Absensi berhasil disimpan! ' + status + ' dicatat untuk ' + studentName, 'success');
+          
+          // Clear form in separate try-catch to prevent errors from affecting response
+          try {
+            clearManualForm();
+          } catch(formClearErr) {
+            console.error('[submitManualAttendance] Error clearing form:', formClearErr);
+          }
+        } else {
+          isSubmittingManual = false;
+          showToast('❌ Gagal menyimpan absensi: ' + (data.message || 'Kesalahan tidak diketahui'), 'error');
+          document.getElementById('submitManualBtn').disabled = false;
+        }
+      } catch(err) {
+        console.error('[submitManualAttendance] Error in success handler:', err);
+        isSubmittingManual = false;
+        // Re-throw so catch block dapat tangkap
+        throw err;
       }
     })
     .catch(err => {
-      console.error('Error:', err);
-      showToast('Terjadi kesalahan saat menyimpan data', 'error');
+      console.error('[submitManualAttendance] Fetch error:', err);
+      console.log('[submitManualAttendance] hasSuccessfulResponse:', hasSuccessfulResponse);
+      isSubmittingManual = false;
+      
+      // Only show error toast if we didn't already show a success response
+      if(!hasSuccessfulResponse) {
+        console.log('[submitManualAttendance] Showing error toast');
+        showToast('❌ Terjadi kesalahan saat menyimpan data', 'error');
+      } else {
+        console.log('[submitManualAttendance] Skipping error toast - success already shown');
+      }
+      
+      document.getElementById('submitManualBtn').disabled = false;
     });
   }
 
@@ -1649,6 +1740,7 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
     if(toastTimeout) clearTimeout(toastTimeout);
     
     document.getElementById('nimInput').value = '';
+    document.getElementById('nimSearchResults').style.display = 'none';
     // Restore default labor ID instead of clearing
     if(defaultLaborIdManual) {
       document.getElementById('laborSelectManual').value = defaultLaborIdManual;
