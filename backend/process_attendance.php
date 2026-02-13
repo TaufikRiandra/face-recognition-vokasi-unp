@@ -87,6 +87,13 @@ else if($action === 'save_embedding') {
     exit;
   }
 
+  // VALIDASI DAILY LIMIT (1x masuk, 1x keluar per hari, exception jika lembur)
+  $daily_limit_validation = validateDailyLimit($user_id, $status, $conn);
+  if(!$daily_limit_validation['valid']) {
+    echo json_encode(['status' => 'error', 'message' => $daily_limit_validation['message']]);
+    exit;
+  }
+
   // Check if user exists dan ambil nama user
   $user_check = mysqli_query($conn, "SELECT id, nama FROM users WHERE id = $user_id");
   if(mysqli_num_rows($user_check) === 0) {
@@ -153,6 +160,13 @@ else if($action === 'submit_attendance') {
   $time_validation = validateAttendanceTime($status);
   if(!$time_validation['valid']) {
     echo json_encode(['status' => 'error', 'message' => $time_validation['message']]);
+    exit;
+  }
+
+  // VALIDASI DAILY LIMIT (1x masuk, 1x keluar per hari, exception jika lembur)
+  $daily_limit_validation = validateDailyLimit($user_id, $status, $conn);
+  if(!$daily_limit_validation['valid']) {
+    echo json_encode(['status' => 'error', 'message' => $daily_limit_validation['message']]);
     exit;
   }
 
