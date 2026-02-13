@@ -1,6 +1,21 @@
 -- Migration: Add Keterangan Column to Attendance
 -- File: database/migration_add_keterangan.sql
 
+
+
+
+
+-- INI BACKUP
+
+
+
+
+
+
+
+
+
+
 -- 1. Add keterangan column to attendance_logs
 ALTER TABLE `attendance_logs` 
 ADD COLUMN `keterangan` VARCHAR(50) DEFAULT 'normal' COMMENT 'normal, terlambat, lembur' AFTER `stored_user_nama`;

@@ -29,9 +29,9 @@ CREATE TABLE IF NOT EXISTS `admin` (
   UNIQUE KEY `username` (`username`)
 ) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table absensi_labor.admin: ~1 rows (approximately)
 INSERT INTO `admin` (`id`, `nama`, `username`, `password`) VALUES
-	(1, 'admin', 'admin', '$2y$10$WNoy8lzAlq1rHD0ivIKGVOxpvCPVAu8yWX7ltHWbN/xnBlzEOC8hu');
+	(1, 'admin', 'admin', '$2a$12$j9Q0477gv5CcqOFloYyOp.CyMnJGFkk9W2HcRS6TvW0XHtVR36jnm');
 
 -- Dumping structure for table absensi_labor.attendance_logs
 CREATE TABLE IF NOT EXISTS `attendance_logs` (
@@ -41,16 +41,17 @@ CREATE TABLE IF NOT EXISTS `attendance_logs` (
   `status` enum('IN','OUT') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT 'IN',
   `confidence_score` float DEFAULT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  `stored_user_nama` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `stored_user_nama` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `keterangan` varchar(50) COLLATE utf8mb4_general_ci DEFAULT 'normal' COMMENT 'normal, terlambat, lembur',
   PRIMARY KEY (`id`),
   KEY `fk_att_user` (`user_id`),
   KEY `idx_labor_id` (`labor_id`),
   KEY `idx_created_at` (`created_at`),
   CONSTRAINT `fk_att_labor` FOREIGN KEY (`labor_id`) REFERENCES `labor` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_att_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=193 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=222 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table absensi_labor.attendance_logs: ~0 rows (approximately)
 
 -- Dumping structure for table absensi_labor.face_embeddings
 CREATE TABLE IF NOT EXISTS `face_embeddings` (
@@ -64,9 +65,9 @@ CREATE TABLE IF NOT EXISTS `face_embeddings` (
   KEY `fk_face_user` (`user_id`),
   KEY `idx_user_embedding` (`user_id`,`embedding_index`),
   CONSTRAINT `fk_face_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=112 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=117 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table absensi_labor.face_embeddings: ~0 rows (approximately)
 
 -- Dumping structure for table absensi_labor.labor
 CREATE TABLE IF NOT EXISTS `labor` (
@@ -74,15 +75,18 @@ CREATE TABLE IF NOT EXISTS `labor` (
   `nama` varchar(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `deskripsi` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `jam_masuk_standar` time DEFAULT '09:30:00' COMMENT 'Jam masuk standar (batas akhir masuk: 09:30)',
+  `jam_pulang_standar` time DEFAULT '18:30:00' COMMENT 'Jam pulang standar (batas pulang: 18:30, jika lewat = lembur)',
+  `toleransi_terlambat` int DEFAULT '1' COMMENT 'Toleransi terlambat dalam menit (default: 1 menit)',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Data exporting was unselected.
-INSERT INTO `labor` (`id`, `nama`, `deskripsi`, `created_at`) VALUES
-	(1, 'Labor Desain', 'Fasilitas lengkap untuk pembuatan animasi 2D dan 3D dengan perangkat profesional', '2026-01-09 09:29:01'),
-	(2, 'Labor Game', 'Studio pengembangan game dengan perangkat gaming dan development tools', '2026-01-09 09:29:01'),
-	(3, 'Labor Tefa', 'Studio Project', '2026-01-09 09:29:01');
-	
+-- Dumping data for table absensi_labor.labor: ~3 rows (approximately)
+INSERT INTO `labor` (`id`, `nama`, `deskripsi`, `created_at`, `jam_masuk_standar`, `jam_pulang_standar`, `toleransi_terlambat`) VALUES
+	(1, 'Labor Desain', 'Fasilitas lengkap untuk pembuatan animasi 2D dan 3D dengan perangkat profesional', '2026-01-09 09:29:01', '09:30:00', '18:30:00', 1),
+	(2, 'Labor Game', 'Studio pengembangan game dengan perangkat gaming dan development tools', '2026-01-09 09:29:01', '09:30:00', '18:30:00', 1),
+	(3, 'Labor Tefa', 'Studio Project', '2026-01-09 09:29:01', '09:30:00', '18:30:00', 1);
+
 -- Dumping structure for table absensi_labor.users
 CREATE TABLE IF NOT EXISTS `users` (
   `id` int NOT NULL AUTO_INCREMENT,
@@ -94,9 +98,9 @@ CREATE TABLE IF NOT EXISTS `users` (
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `nim` (`nim`)
-) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=34 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Data exporting was unselected.
+-- Dumping data for table absensi_labor.users: ~3 rows (approximately)
 
 /*!40103 SET TIME_ZONE=IFNULL(@OLD_TIME_ZONE, 'system') */;
 /*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
