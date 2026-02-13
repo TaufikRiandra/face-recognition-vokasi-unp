@@ -2647,4 +2647,5 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
   });
 </script>
 
+</div>
 <?php include '../asset/footer.php'; ?>

@@ -33,7 +33,7 @@ if(!$a){
     </div>
   </div>
   <div style="display: flex; gap: 10px;">
-    <a href="admin/logout.php" style="background: rgba(255, 255, 255, 0.2); border: 2px solid white; color: white; padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s;" onmouseover="this.style.background='white'; this.style.color='#f59e0b';" onmouseout="this.style.background='rgba(255, 255, 255, 0.2)'; this.style.color='white';">
+    <a href="../admin/logout.php" style="background: rgba(255, 255, 255, 0.2); border: 2px solid white; color: white; padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s;" onmouseover="this.style.background='white'; this.style.color='#f59e0b';" onmouseout="this.style.background='rgba(255, 255, 255, 0.2)'; this.style.color='white';">
       <i class="fas fa-sign-out-alt"></i> Logout
     </a>
   </div>
