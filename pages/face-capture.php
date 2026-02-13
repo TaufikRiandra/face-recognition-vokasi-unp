@@ -2177,12 +2177,16 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
         resetCaptureWithDelay(4000);
       } else {
         showToast('❌ Gagal menyimpan absensi: ' + data.message, 'error');
+        // Reset descriptor saat error agar bisa retry
+        resetCaptureWithDelay(3000);
       }
     })
     .catch(err => {
       console.error('Error:', err);
       setButtonLoading(false);
       showToast('Terjadi kesalahan saat menyimpan', 'error');
+      // Reset descriptor saat error agar bisa retry
+      resetCaptureWithDelay(3000);
     });
   }
 
