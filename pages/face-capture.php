@@ -1,5 +1,5 @@
 <?php
-include 'header.php';
+include '../asset/header.php';
 
 // Get all labor for dropdown
 // $labor_query = mysqli_query($conn, "SELECT id, nama FROM labor ORDER BY nama");
@@ -1317,7 +1317,7 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
       <button class="btn btn-secondary" id="cancelBtn" onclick="resetCapture()">
         <i class="fas fa-redo"></i> Ulang
       </button>
-      <a href="index.php" class="btn btn-secondary">
+      <a href="dashboard.php" class="btn btn-secondary">
         <i class="fas fa-arrow-left"></i> Kembali
       </a>
     </div>
@@ -1539,7 +1539,7 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
 
     // Debounce search
     searchNimTimeout = setTimeout(() => {
-      fetch('./backend/api_search_students.php?query=' + encodeURIComponent(query))
+      fetch('./../backend/api_search_students.php?query=' + encodeURIComponent(query))
         .then(response => response.json())
         .then(data => {
           if(data.success && data.students && data.students.length > 0) {
@@ -1618,7 +1618,7 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
     formData.append('status', status);
     formData.append('confidence', 0.95);
     
-    fetch('./backend/process_attendance.php', {
+    fetch('./../backend/process_attendance.php', {
       method: 'POST',
       body: formData
     })
@@ -1728,7 +1728,7 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
 
   // Load Face API Models
   async function loadModels() {
-    const MODEL_URL = './models/';
+    const MODEL_URL = '../models/';
     
     console.log("Memuat model dari:", MODEL_URL);
     
@@ -1936,7 +1936,7 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
   // Perbandingan dengan Database
   function compareWithDatabase(descriptor, currentTime) {
     // Kirim ke server untuk perbandingan
-    fetch('backend/api_face_compare.php', {
+    fetch('../backend/api_face_compare.php', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1952,7 +1952,7 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
         updateConfidenceDisplay(data.confidence);
         
         // Fetch user data dan tampilkan
-        fetch('backend/api_get_user_data.php', {
+        fetch('../backend/api_get_user_data.php', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -2075,7 +2075,7 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
     formData.append('confidence', currentConfidence);
     formData.append('user_id', currentUserData?.id || null);
 
-    fetch('backend/process_attendance.php', {
+    fetch('../backend/process_attendance.php', {
       method: 'POST',
       body: formData
     })
@@ -2254,7 +2254,7 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
     container.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner"></i> Mencari...</div>';
 
     // Fetch students dari server
-    fetch('backend/api_search_students.php', {
+    fetch('../backend/api_search_students.php', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -2599,7 +2599,7 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
     formData.append('embeddings', JSON.stringify(embeddings)); // Array of 5 embeddings
     formData.append('embedding_count', embeddings.length);
 
-    fetch('backend/process_attendance.php', {
+    fetch('../backend/process_attendance.php', {
       method: 'POST',
       body: formData
     })
@@ -2646,5 +2646,5 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
     loadModels();
   });
 </script>
-</body>
-</html>
+
+<?php include '../asset/footer.php'; ?>

@@ -1,13 +1,13 @@
 <?php
 // Check if this is an AJAX request FIRST (jangan include header untuk AJAX)
 if(!isset($_GET['ajax']) || $_GET['ajax'] != '1') {
-  include 'header.php';
+  include '../asset/header.php';
 }
 
 // AJAX Request Handler
 if(isset($_GET['ajax']) && $_GET['ajax'] == '1') {
   // Include connection only (skip header output)
-  include 'backend/koneksi.php';
+  include '../backend/koneksi.php';
   header('Content-Type: application/json');
   
   // Get filter parameters
@@ -742,7 +742,7 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
       </div>
     </div>
     <div class="filter-buttons">
-      <a href="index.php" class="btn btn-secondary">
+      <a href="dashboard.php" class="btn btn-secondary">
         <i class="fas fa-arrow-left"></i> Kembali
       </a>
       <button class="btn btn-export btn-export-excel" onclick="exportToExcel()">
@@ -849,7 +849,7 @@ function exportToExcel() {
   button.disabled = true;
   
   // Download the file
-  window.location.href = 'backend/api_export_history.php?' + params.toString();
+  window.location.href = '../backend/api_export_history.php?' + params.toString();
   
   // Reset button immediately
   setTimeout(() => {
@@ -882,7 +882,7 @@ function exportToPDF() {
   
   // Download the file
   const link = document.createElement('a');
-  link.href = 'backend/api_export_history.php?' + params.toString();
+  link.href = '../backend/api_export_history.php?' + params.toString();
   link.target = '_blank';
   link.click();
   
@@ -922,5 +922,5 @@ document.addEventListener('DOMContentLoaded', function() {
   performSearch();
 });
 </script>
-</body>
-</html>
+
+<?php include '../asset/footer.php'; ?>
