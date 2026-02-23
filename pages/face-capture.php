@@ -1658,17 +1658,27 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
   function submitAttendanceEntry(studentId, laborId, status) {
     // Validate time before submission
     if(!isAttendanceTimeValid(status)) {
+      console.log('[submitAttendanceEntry] Time validation failed');
       isSubmittingManual = false;
       document.getElementById('submitManualBtn').disabled = false;
       return;
     }
     
+    console.log('[submitAttendanceEntry] Time validation passed, preparing FormData');
     const formData = new FormData();
     formData.append('action', 'submit_attendance');
     formData.append('user_id', studentId);
     formData.append('labor_id', laborId);
     formData.append('status', status);
     formData.append('confidence', 0.95);
+    
+    console.log('[submitAttendanceEntry] FormData prepared:');
+    console.log('  - action: submit_attendance');
+    console.log('  - user_id:', studentId);
+    console.log('  - labor_id:', laborId);
+    console.log('  - status:', status);
+    console.log('  - confidence: 0.95');
+    console.log('[submitAttendanceEntry] Sending fetch request to backend...');
     
     let hasSuccessfulResponse = false; // Track if we got a success response
     
@@ -1677,7 +1687,7 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
       body: formData
     })
     .then(response => {
-      console.log('[submitManualAttendance] Response status:', response.status, 'ok:', response.ok);
+      console.log('[submitAttendanceEntry] Received response - Status:', response.status, 'OK:', response.ok);
       // Check if response is OK (status 200-299)
       if(!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -1686,7 +1696,7 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
     })
     .then(data => {
       try {
-        console.log('[submitManualAttendance] Response data:', data);
+        console.log('[submitAttendanceEntry] Response JSON:', data);
         
         if(!data) {
           throw new Error('Invalid response data');
@@ -1696,38 +1706,39 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
           hasSuccessfulResponse = true;
           isSubmittingManual = false;
           const studentName = selectedNIMStudent ? selectedNIMStudent.nama : 'Mahasiswa';
-          console.log('[submitManualAttendance] Success response, showing toast');
+          console.log('[submitAttendanceEntry] ✅ SUCCESS - showing success toast');
           showToast('✓ Absensi berhasil disimpan! ' + status + ' dicatat untuk ' + studentName, 'success');
           
           // Clear form in separate try-catch to prevent errors from affecting response
           try {
             clearManualForm();
           } catch(formClearErr) {
-            console.error('[submitManualAttendance] Error clearing form:', formClearErr);
+            console.error('[submitAttendanceEntry] Error clearing form:', formClearErr);
           }
         } else {
           isSubmittingManual = false;
+          console.log('[submitAttendanceEntry] ❌ BACKEND RETURNED ERROR:', data.message);
           showToast('❌ Gagal menyimpan absensi: ' + (data.message || 'Kesalahan tidak diketahui'), 'error');
           document.getElementById('submitManualBtn').disabled = false;
         }
       } catch(err) {
-        console.error('[submitManualAttendance] Error in success handler:', err);
+        console.error('[submitAttendanceEntry] Error in success handler:', err);
         isSubmittingManual = false;
         // Re-throw so catch block dapat tangkap
         throw err;
       }
     })
     .catch(err => {
-      console.error('[submitManualAttendance] Fetch error:', err);
-      console.log('[submitManualAttendance] hasSuccessfulResponse:', hasSuccessfulResponse);
+      console.error('[submitAttendanceEntry] ❌ FETCH ERROR:', err);
+      console.log('[submitAttendanceEntry] hasSuccessfulResponse:', hasSuccessfulResponse);
       isSubmittingManual = false;
       
       // Only show error toast if we didn't already show a success response
       if(!hasSuccessfulResponse) {
-        console.log('[submitManualAttendance] Showing error toast');
+        console.log('[submitAttendanceEntry] Showing error toast');
         showToast('❌ Terjadi kesalahan saat menyimpan data', 'error');
       } else {
-        console.log('[submitManualAttendance] Skipping error toast - success already shown');
+        console.log('[submitAttendanceEntry] Skipping error toast - success already shown');
       }
       
       document.getElementById('submitManualBtn').disabled = false;
@@ -2357,18 +2368,24 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
     const minutes = String(now.getMinutes()).padStart(2, '0');
     const currentTime = hours + ':' + minutes;
     
+    console.log('[isAttendanceTimeValid] Checking status:', status, 'currentTime:', currentTime);
+    
     if(status === 'IN') {
       // Masuk: mulai dari 06:00 (tanpa batas atas)
       if(currentTime < '06:00') {
+        console.log('[isAttendanceTimeValid] REJECT - time too early for IN');
         showToast('❌ Absensi dimulai dari jam 06:00', 'error');
         return false;
       }
     } else if(status === 'OUT') {
-      // Pulang: mulai dari 16:00 (tanpa batas atas)
-      if(currentTime < '16:00') {
-        showToast('❌ Absensi pulang dimulai dari jam 16:00', 'error');
-        return false;
-      }
+      // Pulang: default 16:00, TAPI EXCEPTION jika ada outstanding IN dari kemarin
+      // Untuk handle exception, backend akan validate dan return error jika needed
+      // Jadi kita allow request ke backend untuk semua jam, dan biarkan backend decide
+      
+      console.log('[isAttendanceTimeValid] OUT status - bypassing client-side time check');
+      console.log('[isAttendanceTimeValid] Allowing submission - backend akan validate outstanding IN');
+      // TIDAK block di sini - biarkan backend handle dengan outstanding IN logic
+      return true;
     }
     
     return true;
@@ -2851,6 +2868,131 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
   window.addEventListener('load', () => {
     loadModelsWithWorker(); // Gunakan Web Worker untuk non-blocking load
   });
+
+  // ==================== TEST HELPER FUNCTIONS (CONSOLE) ====================
+  // Gunakan di browser console untuk test validasi
+  // Contoh: testInAttempt(95, 3) - test IN untuk user 95 di labor 3
+  
+  async function testInAttempt(userId, laborId) {
+    console.log(`[TEST] Testing IN attempt for user ${userId}, labor ${laborId}`);
+    const formData = new FormData();
+    formData.append('action', 'submit_attendance');
+    formData.append('user_id', userId);
+    formData.append('labor_id', laborId);
+    formData.append('status', 'IN');
+    formData.append('confidence', 0.95);
+    
+    try {
+      const response = await fetch('../backend/process_attendance.php', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await response.json();
+      console.log('[TEST] IN Response:', data);
+      return data;
+    } catch(err) {
+      console.error('[TEST] Error:', err);
+      return { status: 'error', message: err.message };
+    }
+  }
+  
+  async function testOutAttempt(userId, laborId) {
+    console.log(`[TEST] Testing OUT attempt for user ${userId}, labor ${laborId}`);
+    const formData = new FormData();
+    formData.append('action', 'submit_attendance');
+    formData.append('user_id', userId);
+    formData.append('labor_id', laborId);
+    formData.append('status', 'OUT');
+    formData.append('confidence', 0.95);
+    
+    try {
+      const response = await fetch('../backend/process_attendance.php', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await response.json();
+      console.log('[TEST] OUT Response:', data);
+      return data;
+    } catch(err) {
+      console.error('[TEST] Error:', err);
+      return { status: 'error', message: err.message };
+    }
+  }
+  
+  async function testGetStatus(userId) {
+    console.log(`[TEST] Checking status for user ${userId}`);
+    try {
+      const response = await fetch('../backend/api_get_user_data.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId })
+      });
+      const data = await response.json();
+      console.log('[TEST] User Status:', data);
+      return data;
+    } catch(err) {
+      console.error('[TEST] Error:', err);
+      return { status: 'error', message: err.message };
+    }
+  }
+  
+  async function testFullScenario(userId, laborId) {
+    console.log(`\n${'='.repeat(60)}`);
+    console.log(`[TEST SCENARIO] Full test for user ${userId}, labor ${laborId}`);
+    console.log(`${'='.repeat(60)}\n`);
+    
+    // Step 1: Check current status
+    console.log('STEP 1: Check current status before test');
+    const beforeStatus = await testGetStatus(userId);
+    console.log(`Current allowed status: ${beforeStatus.user?.allowedStatus}\n`);
+    
+    // Step 2: Try to IN (seharusnya berhasil jika belum IN hari ini)
+    console.log('STEP 2: Attempt IN');
+    const inResult = await testInAttempt(userId, laborId);
+    if(inResult.status === 'success') {
+      console.log(`✅ IN berhasil - ID: ${inResult.attendance_id}\n`);
+      
+      // Step 3: Check status after IN
+      console.log('STEP 3: Check status after IN (seharusnya OUT untuk lembur)');
+      const afterInStatus = await testGetStatus(userId);
+      console.log(`Allowed status after IN: ${afterInStatus.user?.allowedStatus}\n`);
+      
+      // Step 4: Try IN lagi - SEHARUSNYA GAGAL (sudah IN)
+      console.log('STEP 4: Try IN again - SHOULD FAIL (already IN)');
+      const inAgain = await testInAttempt(userId, laborId);
+      console.log(`Result: ${inAgain.status === 'error' ? '❌ REJECTED (as expected)' : '⚠️ ACCEPTED (unexpected!)'}`);
+      console.log(`Message: ${inAgain.message}\n`);
+      
+    } else {
+      console.log(`❌ IN gagal: ${inResult.message}\n`);
+      return;
+    }
+  }
+  
+  console.log(`
+  ╔═══════════════════════════════════════════════════════════╗
+  ║          ATTENDANCE TEST FUNCTIONS (Console)              ║
+  ╠═══════════════════════════════════════════════════════════╣
+  ║ testInAttempt(userId, laborId)                            ║
+  ║   Test IN submission untuk user tertentu                  ║
+  ║                                                           ║
+  ║ testOutAttempt(userId, laborId)                           ║
+  ║   Test OUT submission untuk user tertentu                 ║
+  ║                                                           ║
+  ║ testGetStatus(userId)                                     ║
+  ║   Check current attendance status dan allowed status      ║
+  ║                                                           ║
+  ║ testFullScenario(userId, laborId)                         ║
+  ║   Full test: check status → try IN → verify rejection    ║
+  ║   untuk test validasi "tidak bisa IN sebelum OUT lembur"  ║
+  ╠═══════════════════════════════════════════════════════════╣
+  ║ CONTOH PENGGUNAAN:                                        ║
+  ║ testFullScenario(95, 3)  // Test untuk user 95, labor 3   ║
+  ║ testInAttempt(96, 3)     // Direct test IN user 96        ║
+  ║ testOutAttempt(95, 3)    // Direct test OUT user 95       ║
+  ║ testGetStatus(95)        // Check status user 95          ║
+  ╚═══════════════════════════════════════════════════════════╝
+  `);
 </script>
 
 </div>

@@ -974,6 +974,27 @@ $total_unik = mysqli_fetch_assoc(mysqli_query($conn, $unique_visitors_query))['t
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
+// AUTO OUT SYSTEM: Silently check and auto-OUT all users with outstanding lembur on dashboard load
+function checkAndAutoOutLembur() {
+  fetch('../backend/process_attendance.php?action=auto_out_system_lembur', {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    console.log('[AUTO_OUT_SYSTEM] Auto-OUT check:', data);
+    if(data.status === 'success' && data.auto_out_count > 0) {
+      console.log(`[AUTO_OUT_SYSTEM] ✅ Auto-OUT ${data.auto_out_count} user(s)`);
+    }
+  })
+  .catch(error => console.error('[AUTO_OUT_SYSTEM] Error:', error));
+}
+
+// Trigger auto-OUT on page load
+checkAndAutoOutLembur();
+
 // Modal Management
 const modalTambahUser = document.getElementById('modalTambahUser');
 const formTambahUser = document.getElementById('formTambahUser');

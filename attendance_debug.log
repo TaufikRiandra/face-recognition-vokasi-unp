@@ -1,0 +1,56 @@
+
+====================================================================================================
+[2026-02-23 16:24:56] 10020 === ATTENDANCE REQUEST ===
+[2026-02-23 16:24:56] 10020 Session admin_id: 1
+[2026-02-23 16:24:56] 10020 POST data: []
+[2026-02-23 16:24:56] 10020 Server time: 2026-02-23 16:24:56 (TZ: Asia/Jakarta)
+[2026-02-23 16:24:56] 10020 DB Connection: OK
+[2026-02-23 16:24:56] 10020 Action: auto_out_system_lembur (POST: null, GET: auto_out_system_lembur)
+[2026-02-23 16:24:56] 10020 === AUTO_OUT_SYSTEM_LEMBUR START ===
+[2026-02-23 16:24:56] 10020 Current time: 16:24:56 (hour: 16, minute: 24), Today: 2026-02-23, Yesterday: 2026-02-22
+[2026-02-23 16:24:56] 10020 Current time: 16:24:56 >= 09:30, proceeding to find users with outstanding IN
+[2026-02-23 16:24:56] 10020 Query:      SELECT DISTINCT        u.id as user_id,       u.nama,       3 as labor_id     FROM users u     WHERE u.id IN (       SELECT user_id        FROM attendance_logs        WHERE DATE(created_at) = '2026-02-22'        AND status = 'IN'     )     AND u.id NOT IN (       SELECT user_id        FROM attendance_logs        WHERE DATE(created_at) = '2026-02-22'        AND status = 'OUT'     )     AND u.id NOT IN (       SELECT user_id        FROM attendance_logs        WHERE DATE(created_at) = '2026-02-23'        AND status = 'OUT'     )   
+[2026-02-23 16:24:56] 10020 Query returned 0 rows
+[2026-02-23 16:24:56] 10020 === AUTO_OUT_SYSTEM_LEMBUR END - Total auto OUT: 0 ===
+
+====================================================================================================
+[2026-02-23 16:25:59] 10020 === ATTENDANCE REQUEST ===
+[2026-02-23 16:25:59] 10020 Session admin_id: 1
+[2026-02-23 16:25:59] 10020 POST data: []
+[2026-02-23 16:25:59] 10020 Server time: 2026-02-23 16:25:59 (TZ: Asia/Jakarta)
+[2026-02-23 16:25:59] 10020 DB Connection: OK
+[2026-02-23 16:25:59] 10020 Action: auto_out_system_lembur (POST: null, GET: auto_out_system_lembur)
+[2026-02-23 16:25:59] 10020 === AUTO_OUT_SYSTEM_LEMBUR START ===
+[2026-02-23 16:25:59] 10020 Current time: 16:25:59 (hour: 16, minute: 25), Today: 2026-02-23, Yesterday: 2026-02-22
+[2026-02-23 16:25:59] 10020 Current time: 16:25:59 >= 09:30, proceeding to find users with outstanding IN
+[2026-02-23 16:25:59] 10020 Query:      SELECT DISTINCT        u.id as user_id,       u.nama,       3 as labor_id     FROM users u     WHERE u.id IN (       SELECT user_id        FROM attendance_logs        WHERE DATE(created_at) = '2026-02-22'        AND status = 'IN'     )     AND u.id NOT IN (       SELECT user_id        FROM attendance_logs        WHERE DATE(created_at) = '2026-02-22'        AND status = 'OUT'     )     AND u.id NOT IN (       SELECT user_id        FROM attendance_logs        WHERE DATE(created_at) = '2026-02-23'        AND status = 'OUT'     )   
+[2026-02-23 16:25:59] 10020 Query returned 0 rows
+[2026-02-23 16:25:59] 10020 === AUTO_OUT_SYSTEM_LEMBUR END - Total auto OUT: 0 ===
+
+====================================================================================================
+[2026-02-23 16:26:05] 10020 === ATTENDANCE REQUEST ===
+[2026-02-23 16:26:05] 10020 Session admin_id: 1
+[2026-02-23 16:26:05] 10020 POST data: []
+[2026-02-23 16:26:05] 10020 Server time: 2026-02-23 16:26:05 (TZ: Asia/Jakarta)
+[2026-02-23 16:26:05] 10020 DB Connection: OK
+[2026-02-23 16:26:05] 10020 Action: auto_out_system_lembur (POST: null, GET: auto_out_system_lembur)
+[2026-02-23 16:26:05] 10020 === AUTO_OUT_SYSTEM_LEMBUR START ===
+[2026-02-23 16:26:05] 10020 Current time: 16:26:05 (hour: 16, minute: 26), Today: 2026-02-23, Yesterday: 2026-02-22
+[2026-02-23 16:26:05] 10020 Current time: 16:26:05 >= 09:30, proceeding to find users with outstanding IN
+[2026-02-23 16:26:05] 10020 Query:      SELECT DISTINCT        u.id as user_id,       u.nama,       3 as labor_id     FROM users u     WHERE u.id IN (       SELECT user_id        FROM attendance_logs        WHERE DATE(created_at) = '2026-02-22'        AND status = 'IN'     )     AND u.id NOT IN (       SELECT user_id        FROM attendance_logs        WHERE DATE(created_at) = '2026-02-22'        AND status = 'OUT'     )     AND u.id NOT IN (       SELECT user_id        FROM attendance_logs        WHERE DATE(created_at) = '2026-02-23'        AND status = 'OUT'     )   
+[2026-02-23 16:26:05] 10020 Query returned 0 rows
+[2026-02-23 16:26:05] 10020 === AUTO_OUT_SYSTEM_LEMBUR END - Total auto OUT: 0 ===
+
+====================================================================================================
+[2026-02-23 16:26:40] 10020 === ATTENDANCE REQUEST ===
+[2026-02-23 16:26:40] 10020 Session admin_id: 1
+[2026-02-23 16:26:40] 10020 POST data: []
+[2026-02-23 16:26:40] 10020 Server time: 2026-02-23 16:26:40 (TZ: Asia/Jakarta)
+[2026-02-23 16:26:40] 10020 DB Connection: OK
+[2026-02-23 16:26:40] 10020 Action: auto_out_system_lembur (POST: null, GET: auto_out_system_lembur)
+[2026-02-23 16:26:40] 10020 === AUTO_OUT_SYSTEM_LEMBUR START ===
+[2026-02-23 16:26:40] 10020 Current time: 16:26:40 (hour: 16, minute: 26), Today: 2026-02-23, Yesterday: 2026-02-22
+[2026-02-23 16:26:40] 10020 Current time: 16:26:40 >= 09:30, proceeding to find users with outstanding IN
+[2026-02-23 16:26:40] 10020 Query:      SELECT DISTINCT        u.id as user_id,       u.nama,       3 as labor_id     FROM users u     WHERE u.id IN (       SELECT user_id        FROM attendance_logs        WHERE DATE(created_at) = '2026-02-22'        AND status = 'IN'     )     AND u.id NOT IN (       SELECT user_id        FROM attendance_logs        WHERE DATE(created_at) = '2026-02-22'        AND status = 'OUT'     )     AND u.id NOT IN (       SELECT user_id        FROM attendance_logs        WHERE DATE(created_at) = '2026-02-23'        AND status = 'OUT'     )   
+[2026-02-23 16:26:40] 10020 Query returned 0 rows
+[2026-02-23 16:26:40] 10020 === AUTO_OUT_SYSTEM_LEMBUR END - Total auto OUT: 0 ===

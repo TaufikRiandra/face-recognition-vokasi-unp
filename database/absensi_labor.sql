@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS `admin` (
 INSERT INTO `admin` (`id`, `nama`, `username`, `password`) VALUES
 	(1, 'admin', 'admin', '$2a$12$j9Q0477gv5CcqOFloYyOp.CyMnJGFkk9W2HcRS6TvW0XHtVR36jnm');
 
---password: admintefa123
+-- password: admintefa123
 
 -- Dumping structure for table absensi_labor.attendance_logs
 CREATE TABLE IF NOT EXISTS `attendance_logs` (
@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS `attendance_logs` (
   KEY `idx_created_at` (`created_at`),
   CONSTRAINT `fk_att_labor` FOREIGN KEY (`labor_id`) REFERENCES `labor` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_att_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=222 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=276 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Dumping data for table absensi_labor.attendance_logs: ~0 rows (approximately)
 
@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS `face_embeddings` (
   KEY `fk_face_user` (`user_id`),
   KEY `idx_user_embedding` (`user_id`,`embedding_index`),
   CONSTRAINT `fk_face_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=117 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=122 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Dumping data for table absensi_labor.face_embeddings: ~0 rows (approximately)
 
@@ -100,9 +100,9 @@ CREATE TABLE IF NOT EXISTS `users` (
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `nim` (`nim`)
-) ENGINE=InnoDB AUTO_INCREMENT=34 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=97 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Dumping data for table absensi_labor.users: ~0 rows (approximately)
+-- Dumping data for table absensi_labor.users: ~60 rows (approximately)
 INSERT INTO `users` (`id`, `nama`, `nim`, `is_active`, `role`, `created_at`, `updated_at`) VALUES
 	(36, 'Khoirun Nisa', '24342058', 1, 'mahasiswa', '2026-02-13 17:21:23', '2026-02-13 17:21:23'),
 	(37, 'Shofi Nurindah', '23342028', 1, 'mahasiswa', '2026-02-13 17:21:36', '2026-02-13 17:21:36'),
@@ -163,6 +163,52 @@ INSERT INTO `users` (`id`, `nama`, `nim`, `is_active`, `role`, `created_at`, `up
 	(92, 'Afifah Nur Fitri', '24342017', 1, 'mahasiswa', '2026-02-13 17:43:45', '2026-02-13 17:43:45'),
 	(93, 'Angelica Merfin Gulo', '24342039', 1, 'mahasiswa', '2026-02-13 17:44:00', '2026-02-13 17:44:00'),
 	(94, 'Najla Putri Rahmadani', '24342032', 1, 'mahasiswa', '2026-02-13 17:44:17', '2026-02-13 17:44:17');
+
+-- Dumping structure for trigger absensi_labor.tr_attendance_keterangan_insert
+SET @OLDTMP_SQL_MODE=@@SQL_MODE, SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
+DELIMITER //
+CREATE TRIGGER `tr_attendance_keterangan_insert` BEFORE INSERT ON `attendance_logs` FOR EACH ROW BEGIN
+    DECLARE v_jam_standar TIME;
+    DECLARE v_jam_pulang_standar TIME;
+    DECLARE v_toleransi INT;
+    DECLARE v_jam_attendance TIME;
+    
+    -- Jika keterangan sudah di-set oleh aplikasi (terutama untuk lembur lintas hari atau auto-OUT), jangan override
+    -- Check: jika keterangan berisi 'lembur' atau 'system' (untuk auto-submit), respect it
+    IF NEW.keterangan NOT LIKE '%lembur%' AND NEW.keterangan NOT LIKE '%system%' THEN
+        -- Get labor settings
+        SELECT jam_masuk_standar, jam_pulang_standar, toleransi_terlambat 
+        INTO v_jam_standar, v_jam_pulang_standar, v_toleransi
+        FROM labor 
+        WHERE id = NEW.labor_id;
+        
+        IF v_jam_standar IS NULL THEN
+            SET v_jam_standar = '09:30:00';
+            SET v_jam_pulang_standar = '18:30:00';
+            SET v_toleransi = 1;
+        END IF;
+        
+        SET v_jam_attendance = TIME(NEW.created_at);
+        
+        -- Calculate keterangan based on time
+        IF NEW.status = 'IN' THEN
+            IF v_jam_attendance > ADDTIME(v_jam_standar, SEC_TO_TIME(v_toleransi * 60)) THEN
+                SET NEW.keterangan = 'terlambat';
+            ELSE
+                SET NEW.keterangan = 'tepat waktu';
+            END IF;
+        ELSEIF NEW.status = 'OUT' THEN
+            -- OUT: cek apakah melebihi jam pulang standar
+            IF v_jam_attendance > ADDTIME(v_jam_pulang_standar, SEC_TO_TIME(v_toleransi * 60)) THEN
+                SET NEW.keterangan = 'lembur';
+            ELSE
+                SET NEW.keterangan = 'tepat waktu';
+            END IF;
+        END IF;
+    END IF;
+END//
+DELIMITER ;
+SET SQL_MODE=@OLDTMP_SQL_MODE;
 
 /*!40103 SET TIME_ZONE=IFNULL(@OLD_TIME_ZONE, 'system') */;
 /*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
