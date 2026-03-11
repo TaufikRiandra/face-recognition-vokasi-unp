@@ -50,70 +50,50 @@ function validateAttendanceTime($status, $user_id = null, $conn = null) {
             ];
         }
     } else if($status === 'OUT') {
-        // Absen KELUAR: default mulai dari 16:00
-        // EXCEPTION: Jika ada IN kemarin yang belum OUT (lembur lintas hari), allow OUT kapan saja
-        $min_hour = 16;
+        // Absen KELUAR: default mulai dari 15:00
+        // EXCEPTION: Jika ada IN (tanggal berapa pun) yang belum OUT, allow OUT kapan saja
+        $min_hour = 15;
         
         writeAttendanceLog("Processing OUT status...");
         writeAttendanceLog("Min hour required: $min_hour, Current hour: $current_hours");
         
-        // Check apakah ada outstanding IN dari kemarin (lembur lintas hari)
+        // Check apakah ada outstanding IN yang belum memiliki pasangan OUT (tanpa batasan tanggal)
         $allow_anytime_out = false;
         if($user_id !== null && $user_id > 0 && $conn !== null) {
-            writeAttendanceLog("Parameters OK - proceeding to check outstanding IN");
-            $yesterday = date('Y-m-d', strtotime('-1 day'));
+            writeAttendanceLog("Parameters OK - proceeding to check outstanding IN (any date)");
+            $today = date('Y-m-d');
             
-            // Debug: Log kemarin date
-            writeAttendanceLog("YESTERDAY: $yesterday");
-            
-            // Cek IN kemarin
-            $yesterday_in_query = "
+            // Cari IN terakhir yang bukan hari ini dan belum ada pasangan OUT-nya
+            $outstanding_in_query = "
                 SELECT COUNT(*) as cnt FROM attendance_logs 
                 WHERE user_id = $user_id 
-                AND DATE(created_at) = '$yesterday' 
                 AND status = 'IN'
+                AND DATE(created_at) < '$today'
+                AND id > COALESCE((
+                    SELECT MAX(id) FROM attendance_logs 
+                    WHERE user_id = $user_id 
+                    AND status = 'OUT'
+                    AND DATE(created_at) < '$today'
+                ), 0)
             ";
-            writeAttendanceLog("QUERY IN: $yesterday_in_query");
+            writeAttendanceLog("QUERY OUTSTANDING IN: $outstanding_in_query");
             
-            $yesterday_in_result = mysqli_query($conn, $yesterday_in_query);
+            $outstanding_in_result = mysqli_query($conn, $outstanding_in_query);
             
-            if(!$yesterday_in_result) {
-                writeAttendanceLog("ERROR query IN kemarin: " . mysqli_error($conn));
-                $yesterday_in_count = 0;
+            if(!$outstanding_in_result) {
+                writeAttendanceLog("ERROR query outstanding IN: " . mysqli_error($conn));
+                $outstanding_in_count = 0;
             } else {
-                $result = mysqli_fetch_assoc($yesterday_in_result);
-                $yesterday_in_count = $result ? intval($result['cnt']) : 0;
-                writeAttendanceLog("RESULT - IN Count kemarin: $yesterday_in_count");
+                $result = mysqli_fetch_assoc($outstanding_in_result);
+                $outstanding_in_count = $result ? intval($result['cnt']) : 0;
+                writeAttendanceLog("RESULT - Outstanding IN count (past, any date): $outstanding_in_count");
             }
             
-            // Cek OUT kemarin
-            $yesterday_out_query = "
-                SELECT COUNT(*) as cnt FROM attendance_logs 
-                WHERE user_id = $user_id 
-                AND DATE(created_at) = '$yesterday' 
-                AND status = 'OUT'
-            ";
-            writeAttendanceLog("QUERY OUT: $yesterday_out_query");
+            writeAttendanceLog("SUMMARY - outstanding_in_count: $outstanding_in_count");
             
-            $yesterday_out_result = mysqli_query($conn, $yesterday_out_query);
-            
-            if(!$yesterday_out_result) {
-                writeAttendanceLog("ERROR query OUT kemarin: " . mysqli_error($conn));
-                $yesterday_out_count = 0;
-            } else {
-                $result = mysqli_fetch_assoc($yesterday_out_result);
-                $yesterday_out_count = $result ? intval($result['cnt']) : 0;
-                writeAttendanceLog("RESULT - OUT Count kemarin: $yesterday_out_count");
-            }
-            
-            writeAttendanceLog("SUMMARY - yesterday_in: $yesterday_in_count, yesterday_out: $yesterday_out_count");
-            
-            // Jika kemarin ada IN tapi tidak ada OUT = lembur lintas hari
-            if($yesterday_in_count > 0 && $yesterday_out_count === 0) {
-                // Outstanding IN exists - tapi hanya allow anytime OUT untuk FIRST OUT hari ini (untuk close lembur)
-                // Jika sudah ada OUT hari ini, maka require 16:00 untuk OUT berikutnya
-                
-                $today = date('Y-m-d');
+            // Jika ada IN sebelum hari ini yang belum di-OUT = outstanding lembur
+            if($outstanding_in_count > 0) {
+                // Cek apakah sudah ada OUT hari ini (untuk close lembur tersebut)
                 $today_out_query = "
                     SELECT COUNT(*) as cnt FROM attendance_logs 
                     WHERE user_id = $user_id 
@@ -133,16 +113,16 @@ function validateAttendanceTime($status, $user_id = null, $conn = null) {
                     writeAttendanceLog("OUT count today: $today_out_count");
                 }
                 
-                // Hanya allow anytime OUT jika belum ada OUT hari ini
+                // Hanya allow anytime OUT jika belum ada OUT hari ini (untuk close lembur)
                 if($today_out_count === 0) {
                     $allow_anytime_out = true;
                     writeAttendanceLog("✅ DECISION: Outstanding IN detected + No OUT today yet = Allow OUT anytime (close lembur)");
                 } else {
                     $allow_anytime_out = false;
-                    writeAttendanceLog("⚠️  DECISION: Outstanding IN detected BUT already OUTed today = Require 16:00 for next OUT");
+                    writeAttendanceLog("⚠️  DECISION: Outstanding IN detected BUT already OUTed today = Require 15:00 for next OUT");
                 }
             } else {
-                writeAttendanceLog("❌ DECISION: No outstanding IN");
+                writeAttendanceLog("❌ DECISION: No outstanding IN from past dates");
             }
         } else {
             writeAttendanceLog("⚠️  Parameters MISSING or INVALID for outstanding IN check");
@@ -153,12 +133,12 @@ function validateAttendanceTime($status, $user_id = null, $conn = null) {
         
         writeAttendanceLog("ALLOW_ANYTIME_OUT: " . ($allow_anytime_out ? 'YES' : 'NO'));
         
-        // Jika bukan lembur lintas hari, enforce jam 16:00
+        // Jika tidak ada outstanding IN, enforce jam 15:00
         if(!$allow_anytime_out && $current_hours < $min_hour) {
             writeAttendanceLog("❌ REJECT: Jam terlalu awal ($current_time) dan tidak ada outstanding IN");
             return [
                 'valid' => false,
-                'message' => 'Absensi pulang dimulai dari jam 16:00 WIB. Waktu server: ' . $current_time,
+                'message' => 'Absensi pulang dimulai dari jam 15:00 WIB. Waktu server: ' . $current_time,
                 'current_time' => $current_time
             ];
         }
@@ -186,36 +166,31 @@ function validateAttendanceTime($status, $user_id = null, $conn = null) {
  */
 function validateDailyLimit($user_id, $status, $conn) {
     $today = date('Y-m-d');
-    $yesterday = date('Y-m-d', strtotime('-1 day'));
     
     writeAttendanceLog("=== validateDailyLimit START - user_id: $user_id, status: $status ===");
     
-    // Check apakah ada outstanding IN dari kemarin (lembur lintas hari)
-    // Outstanding = ada IN kemarin tapi TIDAK ada OUT (bisa OUT kemarin atau hari ini)
-    $yesterday_in_query = mysqli_query($conn, "
+    // Check apakah ada outstanding IN dari tanggal manapun sebelum hari ini (bukan hanya kemarin)
+    // Outstanding = ada IN sebelum hari ini yang belum diikuti OUT
+    $outstanding_in_query = mysqli_query($conn, "
         SELECT COUNT(*) as cnt FROM attendance_logs 
-        WHERE user_id = $user_id AND DATE(created_at) = '$yesterday' AND status = 'IN'
+        WHERE user_id = $user_id 
+        AND status = 'IN'
+        AND DATE(created_at) < '$today'
+        AND id > COALESCE((
+            SELECT MAX(id) FROM attendance_logs 
+            WHERE user_id = $user_id 
+            AND status = 'OUT'
+            AND DATE(created_at) < '$today'
+        ), 0)
     ");
-    if(!$yesterday_in_query) {
-        writeAttendanceLog("ERROR: yesterday_in_query failed - " . mysqli_error($conn));
+    if(!$outstanding_in_query) {
+        writeAttendanceLog("ERROR: outstanding_in_query failed - " . mysqli_error($conn));
         return ['valid' => false, 'message' => 'Database error'];
     }
-    $yesterday_in_result = mysqli_fetch_assoc($yesterday_in_query);
-    $yesterday_in_count = intval($yesterday_in_result['cnt'] ?? 0);
+    $outstanding_in_result = mysqli_fetch_assoc($outstanding_in_query);
+    $outstanding_in_count = intval($outstanding_in_result['cnt'] ?? 0);
     
-    // Check OUT dari kemarin
-    $yesterday_out_query = mysqli_query($conn, "
-        SELECT COUNT(*) as cnt FROM attendance_logs 
-        WHERE user_id = $user_id AND DATE(created_at) = '$yesterday' AND status = 'OUT'
-    ");
-    if(!$yesterday_out_query) {
-        writeAttendanceLog("ERROR: yesterday_out_query failed - " . mysqli_error($conn));
-        return ['valid' => false, 'message' => 'Database error'];
-    }
-    $yesterday_out_result = mysqli_fetch_assoc($yesterday_out_query);
-    $yesterday_out_count = intval($yesterday_out_result['cnt'] ?? 0);
-    
-    // Check OUT dari hari ini (auto-OUT system membuat OUT di hari ini untuk tutup lembur kemarin)
+    // Check OUT dari hari ini
     $today_out_query = mysqli_query($conn, "
         SELECT COUNT(*) as cnt FROM attendance_logs 
         WHERE user_id = $user_id AND DATE(created_at) = '$today' AND status = 'OUT'
@@ -227,20 +202,19 @@ function validateDailyLimit($user_id, $status, $conn) {
     $today_out_result = mysqli_fetch_assoc($today_out_query);
     $today_out_count = intval($today_out_result['cnt'] ?? 0);
     
-    // Outstanding check: ada IN kemarin TAPI belum ada OUT (baik kemarin atau hari ini)
-    $total_out_count = $yesterday_out_count + $today_out_count;
-    $has_outstanding_in = ($yesterday_in_count > 0 && $total_out_count === 0);
-    writeAttendanceLog("Outstanding IN: yesterday_in=$yesterday_in_count, yesterday_out=$yesterday_out_count, today_out=$today_out_count, total_out=$total_out_count, has_outstanding=$has_outstanding_in");
+    // Outstanding check: ada IN dari tanggal manapun sebelum hari ini yang belum di-OUT
+    $has_outstanding_in = ($outstanding_in_count > 0 && $today_out_count === 0);
+    writeAttendanceLog("Outstanding IN (any past date): outstanding_in_count=$outstanding_in_count, today_out=$today_out_count, has_outstanding=$has_outstanding_in");
     
     if($status === 'IN') {
         writeAttendanceLog("Validating IN request...");
         
-        // CRITICAL RULE: Jika ada outstanding IN dari kemarin, TIDAK BOLEH IN sampai OUT lembur dulu!
+        // CRITICAL RULE: Jika ada outstanding IN dari tanggal manapun, TIDAK BOLEH IN sampai OUT lembur dulu!
         if($has_outstanding_in) {
-            writeAttendanceLog("REJECT: User has outstanding IN from yesterday - must OUT first!");
+            writeAttendanceLog("REJECT: User has outstanding IN (past date) - must OUT first!");
             return [
                 'valid' => false,
-                'message' => 'Anda masih memiliki jam kerja lembur yang belum diselesaikan dari kemarin. Silakan keluar (OUT) lembur terlebih dahulu sebelum masuk kembali.'
+                'message' => 'Anda masih memiliki jam kerja lembur yang belum diselesaikan. Silakan keluar (OUT) lembur terlebih dahulu sebelum masuk kembali.'
             ];
         }
         
@@ -384,7 +358,7 @@ function hitungKeterangan($status, $waktu_attendance, $labor_id, $conn) {
     if(!$result || mysqli_num_rows($result) == 0) {
         // Default jika tidak ada setting labor
         $jam_masuk = '08:00:00';
-        $jam_pulang = '16:00:00';
+        $jam_pulang = '15:00:00';
         $toleransi = 15;
     } else {
         $labor = mysqli_fetch_assoc($result);

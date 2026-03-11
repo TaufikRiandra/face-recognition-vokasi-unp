@@ -276,39 +276,33 @@ else if($action === 'submit_attendance') {
   }
   writeToLog("Last status today: " . ($lastStatus ?? 'NULL'));
   
-  // Check outstanding IN dari kemarin (lembur lintas hari)
-  writeToLog("About to check outstanding IN from yesterday...");
-  $yesterday = date('Y-m-d', strtotime('-1 day'));
-  $yesterday_in_query = mysqli_query($conn, "
+  // Check outstanding IN dari tanggal manapun sebelum hari ini (bukan hanya kemarin)
+  writeToLog("About to check outstanding IN (any past date)...");
+  $today = date('Y-m-d');
+  $outstanding_in_query = mysqli_query($conn, "
     SELECT COUNT(*) as cnt FROM attendance_logs 
-    WHERE user_id = $user_id AND DATE(created_at) = '$yesterday' AND status = 'IN'
+    WHERE user_id = $user_id 
+    AND status = 'IN'
+    AND DATE(created_at) < '$today'
+    AND id > COALESCE((
+        SELECT MAX(id) FROM attendance_logs 
+        WHERE user_id = $user_id 
+        AND status = 'OUT'
+        AND DATE(created_at) < '$today'
+    ), 0)
   ");
   
-  if(!$yesterday_in_query) {
-    writeToLog("ERROR: Yesterday IN query failed - " . mysqli_error($conn));
-    echo json_encode(['status' => 'error', 'message' => 'Gagal query kemarin: ' . mysqli_error($conn)]);
+  if(!$outstanding_in_query) {
+    writeToLog("ERROR: Outstanding IN query failed - " . mysqli_error($conn));
+    echo json_encode(['status' => 'error', 'message' => 'Gagal query outstanding IN: ' . mysqli_error($conn)]);
     exit;
   }
   
-  $result_in = mysqli_fetch_assoc($yesterday_in_query);
-  $yesterday_in_count = $result_in ? intval($result_in['cnt']) : 0;
+  $result_in = mysqli_fetch_assoc($outstanding_in_query);
+  $outstanding_in_count = $result_in ? intval($result_in['cnt']) : 0;
   
-  $yesterday_out_query = mysqli_query($conn, "
-    SELECT COUNT(*) as cnt FROM attendance_logs 
-    WHERE user_id = $user_id AND DATE(created_at) = '$yesterday' AND status = 'OUT'
-  ");
-  
-  if(!$yesterday_out_query) {
-    writeToLog("ERROR: Yesterday OUT query failed - " . mysqli_error($conn));
-    echo json_encode(['status' => 'error', 'message' => 'Gagal query kemarin OUT: ' . mysqli_error($conn)]);
-    exit;
-  }
-  
-  $result_out = mysqli_fetch_assoc($yesterday_out_query);
-  $yesterday_out_count = $result_out ? intval($result_out['cnt']) : 0;
-  
-  $has_outstanding_in = ($yesterday_in_count > 0 && $yesterday_out_count === 0);
-  writeToLog("Outstanding IN check - yesterday_in: $yesterday_in_count, yesterday_out: $yesterday_out_count, has_outstanding: " . ($has_outstanding_in ? 'YES' : 'NO'));
+  $has_outstanding_in = ($outstanding_in_count > 0);
+  writeToLog("Outstanding IN check (any past date) - outstanding_in_count: $outstanding_in_count, has_outstanding: " . ($has_outstanding_in ? 'YES' : 'NO'));
   
   // Validasi status transition dengan consideration untuk lembur lintas hari
   writeToLog("Checking status transition...");
@@ -419,21 +413,22 @@ else if($action === 'test_submit_attendance_at_time') {
       exit;
     }
   } else if($status === 'OUT') {
-    // Check outstanding IN
-    $yesterday = date('Y-m-d', strtotime('-1 day'));
-    $yesterday_in_query = mysqli_query($conn, "
+    // Check outstanding IN (tanpa batasan tanggal - bukan hanya kemarin)
+    $today_date = date('Y-m-d');
+    $outstanding_in_test_query = mysqli_query($conn, "
       SELECT COUNT(*) as cnt FROM attendance_logs 
-      WHERE user_id = $user_id AND DATE(created_at) = '$yesterday' AND status = 'IN'
+      WHERE user_id = $user_id 
+      AND status = 'IN'
+      AND DATE(created_at) < '$today_date'
+      AND id > COALESCE((
+          SELECT MAX(id) FROM attendance_logs 
+          WHERE user_id = $user_id 
+          AND status = 'OUT'
+          AND DATE(created_at) < '$today_date'
+      ), 0)
     ");
-    $result = mysqli_fetch_assoc($yesterday_in_query);
-    $yesterday_in_count = $result ? intval($result['cnt']) : 0;
-    
-    $yesterday_out_query = mysqli_query($conn, "
-      SELECT COUNT(*) as cnt FROM attendance_logs 
-      WHERE user_id = $user_id AND DATE(created_at) = '$yesterday' AND status = 'OUT'
-    ");
-    $result = mysqli_fetch_assoc($yesterday_out_query);
-    $yesterday_out_count = $result ? intval($result['cnt']) : 0;
+    $result = mysqli_fetch_assoc($outstanding_in_test_query);
+    $outstanding_in_count_test = $result ? intval($result['cnt']) : 0;
 
     $today = date('Y-m-d');
     $today_out_query = mysqli_query($conn, "
@@ -443,14 +438,14 @@ else if($action === 'test_submit_attendance_at_time') {
     $result = mysqli_fetch_assoc($today_out_query);
     $today_out_count = $result ? intval($result['cnt']) : 0;
 
-    $has_outstanding_in = ($yesterday_in_count > 0 && $yesterday_out_count === 0 && $today_out_count === 0);
+    $has_outstanding_in = ($outstanding_in_count_test > 0 && $today_out_count === 0);
     
-    writeToLog("TEST - Outstanding IN check: yesterday_in=$yesterday_in_count, yesterday_out=$yesterday_out_count, today_out=$today_out_count, has_outstanding=$has_outstanding_in");
+    writeToLog("TEST - Outstanding IN check (any past date): outstanding_in=$outstanding_in_count_test, today_out=$today_out_count, has_outstanding=$has_outstanding_in");
 
     // Allow OUT anytime jika ada outstanding IN, atau jam >= 16 untuk normal OUT
     if(!$has_outstanding_in && $test_hour < 16) {
       writeToLog("TEST - REJECT: OUT time too early (hour $test_hour < 16) and no outstanding IN");
-      echo json_encode(['status' => 'error', 'message' => 'Test mode: OUT harus jam 16:00 atau lebih (atau ada lembur kemarin)']);
+      echo json_encode(['status' => 'error', 'message' => 'Test mode: OUT harus jam 16:00 atau lebih (atau ada lembur yang belum diselesaikan)']);
       exit;
     }
   }
@@ -513,25 +508,24 @@ else if($action === 'auto_out_system_lembur') {
   $current_hour = intval(date('H'));
   $current_minute = intval(date('i'));
   $today = date('Y-m-d');
-  $yesterday = date('Y-m-d', strtotime('-1 day'));
   
-  writeToLog("Current time: $current_time (hour: $current_hour, minute: $current_minute), Today: $today, Yesterday: $yesterday");
+  writeToLog("Current time: $current_time (hour: $current_hour, minute: $current_minute), Today: $today");
   
-  // Condition 1: Sudah melewati jam 09:30 (terlambat untuk IN)?
-  // 09:30 adalah jam terlambat untuk IN - jika sudah lewat jam ini dan belum OUT, auto-OUT
-  if($current_hour < 9 || ($current_hour === 9 && $current_minute < 30)) {
-    writeToLog("SKIP: Masih sebelum jam 09:30 - users masih bisa OUT manual");
+  // Condition 1: Sudah melewati jam 06:00 (terlambat untuk IN)?
+  // 06:00 adalah jam terlambat untuk IN - jika sudah lewat jam ini dan belum OUT, auto-OUT
+  if($current_hour < 6 || ($current_hour === 6 && $current_minute < 00)) {
+    writeToLog("SKIP: Masih sebelum jam 06:00 - users masih bisa OUT manual");
     echo json_encode([
       'status' => 'skip',
-      'message' => 'Masih sebelum jam 09:30, auto OUT belum triggered',
+      'message' => 'Masih sebelum jam 06:00, auto OUT belum triggered',
       'current_time' => $current_time
     ]);
     exit;
   }
   
-  writeToLog("Current time: $current_time >= 09:30, proceeding to find users with outstanding IN");
+  writeToLog("Current time: $current_time >= 06:00, proceeding to find users with outstanding IN");
   
-  // Find users dengan outstanding IN (IN kemarin, OUT kemarin = 0, OUT hari ini = 0)
+  // Find users dengan outstanding IN dari tanggal manapun sebelum hari ini yang belum di-OUT
   $query = "
     SELECT DISTINCT 
       u.id as user_id,
@@ -539,22 +533,25 @@ else if($action === 'auto_out_system_lembur') {
       3 as labor_id
     FROM users u
     WHERE u.id IN (
-      SELECT user_id 
-      FROM attendance_logs 
-      WHERE DATE(created_at) = '$yesterday' 
-      AND status = 'IN'
+      -- User yang punya IN sebelum hari ini yang ID-nya lebih besar dari OUT terakhir mereka
+      SELECT DISTINCT al_in.user_id
+      FROM attendance_logs al_in
+      WHERE al_in.status = 'IN'
+        AND DATE(al_in.created_at) < '$today'
+        AND al_in.id > COALESCE((
+            SELECT MAX(al_out.id) 
+            FROM attendance_logs al_out 
+            WHERE al_out.user_id = al_in.user_id 
+              AND al_out.status = 'OUT'
+              AND DATE(al_out.created_at) < '$today'
+        ), 0)
     )
     AND u.id NOT IN (
-      SELECT user_id 
-      FROM attendance_logs 
-      WHERE DATE(created_at) = '$yesterday' 
-      AND status = 'OUT'
-    )
-    AND u.id NOT IN (
+      -- Kecualikan user yang sudah OUT hari ini
       SELECT user_id 
       FROM attendance_logs 
       WHERE DATE(created_at) = '$today' 
-      AND status = 'OUT'
+        AND status = 'OUT'
     )
   ";
   
@@ -625,4 +622,3 @@ if ($log_handle) {
     fclose($log_handle);
 }
 ?>
-

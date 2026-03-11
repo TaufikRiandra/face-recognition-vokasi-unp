@@ -98,6 +98,36 @@ $unique_visitors_query = "
   WHERE $where_clause_stats
 ";
 $total_unik = mysqli_fetch_assoc(mysqli_query($conn, $unique_visitors_query))['total_unik'] ?? 0;
+
+// Cari mahasiswa yang status IN tapi belum OUT di tanggal BUKAN hari ini
+// (outstanding lembur - perlu auto OUT dengan persetujuan admin)
+$outstanding_query = "
+  SELECT 
+    u.id as user_id,
+    COALESCE(u.nama, al.stored_user_nama) as nama,
+    u.nim,
+    al.created_at as waktu_in,
+    DATE(al.created_at) as tanggal_in
+  FROM attendance_logs al
+  LEFT JOIN users u ON al.user_id = u.id
+  WHERE al.status = 'IN'
+    AND DATE(al.created_at) < '$today'
+    AND al.user_id IS NOT NULL
+    AND al.id > COALESCE((
+        SELECT MAX(al2.id) FROM attendance_logs al2
+        WHERE al2.user_id = al.user_id
+          AND al2.status = 'OUT'
+          AND DATE(al2.created_at) < '$today'
+    ), 0)
+    AND al.user_id NOT IN (
+        SELECT DISTINCT user_id FROM attendance_logs
+        WHERE DATE(created_at) = '$today' AND status = 'OUT' AND user_id IS NOT NULL
+    )
+  ORDER BY al.created_at ASC
+";
+$outstanding_result = mysqli_query($conn, $outstanding_query);
+$outstanding_students = $outstanding_result ? mysqli_fetch_all($outstanding_result, MYSQLI_ASSOC) : [];
+$has_outstanding = count($outstanding_students) > 0;
 ?>
 
 <!DOCTYPE html>
@@ -729,6 +759,257 @@ $total_unik = mysqli_fetch_assoc(mysqli_query($conn, $unique_visitors_query))['t
   .form-error.show {
     display: block;
   }
+
+  /* ===== MODAL KONFIRMASI AUTO-OUT OUTSTANDING ===== */
+  .modal-autoout-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.2s ease;
+  }
+
+  .modal-autoout-overlay.active {
+    display: flex;
+  }
+
+  .modal-autoout-box {
+    background: var(--bg-primary);
+    border-radius: 16px;
+    padding: 0;
+    width: 90%;
+    max-width: 580px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    animation: slideInUp 0.3s ease;
+    overflow: hidden;
+  }
+
+  .modal-autoout-header {
+    padding: 24px 28px 20px;
+    border-bottom: 2px solid var(--border-color);
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .modal-autoout-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    color: #92400e;
+    flex-shrink: 0;
+  }
+
+  .modal-autoout-title {
+    flex: 1;
+  }
+
+  .modal-autoout-title h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 4px;
+  }
+
+  .modal-autoout-title p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .modal-autoout-body {
+    padding: 20px 28px;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .modal-autoout-count-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    color: #78350f;
+    border: 1.5px solid #fcd34d;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+
+  .modal-autoout-list {
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .modal-autoout-list-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color);
+    transition: background 0.15s;
+  }
+
+  .modal-autoout-list-item:last-child {
+    border-bottom: none;
+  }
+
+  .modal-autoout-list-item:hover {
+    background: var(--bg-secondary);
+  }
+
+  .modal-autoout-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .modal-autoout-student-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .modal-autoout-student-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .modal-autoout-student-nim {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 1px;
+  }
+
+  .modal-autoout-date-badge {
+    background: #fee2e2;
+    color: #dc2626;
+    border: 1px solid #fca5a5;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .modal-autoout-footer {
+    padding: 18px 28px;
+    border-top: 2px solid var(--border-color);
+    display: flex;
+    gap: 10px;
+    background: var(--bg-secondary);
+  }
+
+  .btn-autoout-cancel {
+    flex: 1;
+    padding: 11px 20px;
+    border: 2px solid var(--border-color);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .btn-autoout-cancel:hover {
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+
+  .btn-autoout-confirm {
+    flex: 2;
+    padding: 11px 20px;
+    border: none;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .btn-autoout-confirm:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(245, 158, 11, 0.35);
+  }
+
+  .btn-autoout-confirm:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .autoout-progress {
+    display: none;
+    padding: 16px 28px;
+    background: #f0fdf4;
+    border-top: 2px solid #bbf7d0;
+  }
+
+  .autoout-progress.show {
+    display: block;
+  }
+
+  .autoout-progress-bar-wrap {
+    height: 8px;
+    background: #dcfce7;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+
+  .autoout-progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--success), #34d399);
+    border-radius: 4px;
+    width: 0%;
+    transition: width 0.4s ease;
+  }
+
+  .autoout-progress-text {
+    font-size: 12px;
+    color: #166534;
+    font-weight: 500;
+    text-align: center;
+  }
 </style>
 </head>
 
@@ -936,6 +1217,63 @@ $total_unik = mysqli_fetch_assoc(mysqli_query($conn, $unique_visitors_query))['t
 
 </div>
 
+<!-- Modal Konfirmasi Auto-OUT Outstanding -->
+<div id="modalAutoOut" class="modal-autoout-overlay <?= $has_outstanding ? 'active' : '' ?>">
+  <div class="modal-autoout-box">
+    <div class="modal-autoout-header">
+      <div class="modal-autoout-icon">
+        <i class="fas fa-clock"></i>
+      </div>
+      <div class="modal-autoout-title">
+        <h3>Absen Keluar Belum Diselesaikan</h3>
+        <p>Terdapat mahasiswa yang masuk pada tanggal sebelumnya namun belum melakukan absen keluar. Lakukan OUT otomatis?</p>
+      </div>
+    </div>
+
+    <div class="modal-autoout-body">
+      <div class="modal-autoout-count-badge">
+        <i class="fas fa-exclamation-triangle"></i>
+        <?= count($outstanding_students) ?> mahasiswa perlu di-OUT
+      </div>
+
+      <div class="modal-autoout-list">
+        <?php foreach($outstanding_students as $s): ?>
+          <div class="modal-autoout-list-item">
+            <div class="modal-autoout-avatar">
+              <?= strtoupper(mb_substr($s['nama'] ?? '?', 0, 1)) ?>
+            </div>
+            <div class="modal-autoout-student-info">
+              <div class="modal-autoout-student-name"><?= htmlspecialchars($s['nama'] ?? 'Unknown') ?></div>
+              <div class="modal-autoout-student-nim">NIM: <?= htmlspecialchars($s['nim'] ?? '-') ?></div>
+            </div>
+            <div class="modal-autoout-date-badge">
+              <i class="fas fa-calendar-times"></i>
+              <?= date('d M Y', strtotime($s['tanggal_in'])) ?>
+            </div>
+          </div>
+        <?php endforeach; ?>
+      </div>
+    </div>
+
+    <!-- Progress bar (muncul saat proses berjalan) -->
+    <div class="autoout-progress" id="autoOutProgress">
+      <div class="autoout-progress-bar-wrap">
+        <div class="autoout-progress-bar-fill" id="autoOutProgressBar"></div>
+      </div>
+      <div class="autoout-progress-text" id="autoOutProgressText">Memproses...</div>
+    </div>
+
+    <div class="modal-autoout-footer">
+      <button class="btn-autoout-cancel" id="btnAutoOutCancel">
+        <i class="fas fa-times"></i> Lewati
+      </button>
+      <button class="btn-autoout-confirm" id="btnAutoOutConfirm">
+        <i class="fas fa-check-circle"></i> Ya, Lakukan OUT Otomatis (<?= count($outstanding_students) ?> mahasiswa)
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal Tambah User -->
 <div id="modalTambahUser" class="modal-overlay">
   <div class="modal-content">
@@ -974,26 +1312,96 @@ $total_unik = mysqli_fetch_assoc(mysqli_query($conn, $unique_visitors_query))['t
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-// AUTO OUT SYSTEM: Silently check and auto-OUT all users with outstanding lembur on dashboard load
-function checkAndAutoOutLembur() {
-  fetch('../backend/process_attendance.php?action=auto_out_system_lembur', {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    }
-  })
-  .then(response => response.json())
-  .then(data => {
-    console.log('[AUTO_OUT_SYSTEM] Auto-OUT check:', data);
-    if(data.status === 'success' && data.auto_out_count > 0) {
-      console.log(`[AUTO_OUT_SYSTEM] ✅ Auto-OUT ${data.auto_out_count} user(s)`);
-    }
-  })
-  .catch(error => console.error('[AUTO_OUT_SYSTEM] Error:', error));
+// ===== AUTO-OUT DENGAN KONFIRMASI =====
+// Data mahasiswa outstanding dari PHP (hanya ada jika ada yang perlu di-OUT)
+const outstandingStudents = <?= json_encode($outstanding_students) ?>;
+
+const modalAutoOut     = document.getElementById('modalAutoOut');
+const btnAutoOutCancel = document.getElementById('btnAutoOutCancel');
+const btnAutoOutConfirm= document.getElementById('btnAutoOutConfirm');
+const autoOutProgress  = document.getElementById('autoOutProgress');
+const autoOutProgressBar = document.getElementById('autoOutProgressBar');
+const autoOutProgressText= document.getElementById('autoOutProgressText');
+
+// Tutup modal tanpa aksi
+if(btnAutoOutCancel) {
+  btnAutoOutCancel.addEventListener('click', function() {
+    modalAutoOut.classList.remove('active');
+    console.log('[AUTO_OUT] Dilewati oleh admin.');
+  });
 }
 
-// Trigger auto-OUT on page load
-checkAndAutoOutLembur();
+// Konfirmasi → jalankan auto-OUT
+if(btnAutoOutConfirm) {
+  btnAutoOutConfirm.addEventListener('click', async function() {
+    if(outstandingStudents.length === 0) return;
+
+    // Tampilkan progress, kunci tombol
+    btnAutoOutConfirm.disabled = true;
+    btnAutoOutCancel.disabled  = true;
+    btnAutoOutConfirm.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+    autoOutProgress.classList.add('show');
+
+    let sukses = 0;
+    let gagal  = 0;
+    const total = outstandingStudents.length;
+
+    for(let i = 0; i < total; i++) {
+      const mhs = outstandingStudents[i];
+
+      autoOutProgressText.textContent = `Memproses ${i + 1} dari ${total}: ${mhs.nama}`;
+      autoOutProgressBar.style.width  = `${Math.round(((i) / total) * 100)}%`;
+
+      try {
+        const formData = new URLSearchParams({
+          action    : 'auto_out_system_lembur',
+          user_id   : mhs.user_id,
+          labor_id  : '3'
+        });
+
+        const resp = await fetch('../backend/process_attendance.php', {
+          method : 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body   : formData.toString()
+        });
+
+        const data = await resp.json();
+        if(data.status === 'success' || (data.auto_out_count && data.auto_out_count > 0)) {
+          sukses++;
+          console.log(`[AUTO_OUT] ✅ ${mhs.nama} berhasil di-OUT`);
+        } else {
+          gagal++;
+          console.warn(`[AUTO_OUT] ⚠️ ${mhs.nama} gagal:`, data.message);
+        }
+      } catch(err) {
+        gagal++;
+        console.error(`[AUTO_OUT] ❌ Error untuk ${mhs.nama}:`, err);
+      }
+    }
+
+    // Selesai — progress penuh
+    autoOutProgressBar.style.width = '100%';
+    autoOutProgressText.textContent = `Selesai: ${sukses} berhasil${gagal > 0 ? ', ' + gagal + ' gagal' : ''}.`;
+
+    // Tutup modal & tampilkan notifikasi lalu reload
+    setTimeout(() => {
+      modalAutoOut.classList.remove('active');
+      if(sukses > 0) {
+        showSuccessNotification(`${sukses} mahasiswa berhasil di-OUT otomatis.`);
+        setTimeout(() => location.reload(), 2000);
+      }
+    }, 1000);
+  });
+}
+
+// Klik di luar modal TIDAK menutup (harus pilih tombol)
+if(modalAutoOut) {
+  modalAutoOut.addEventListener('click', function(e) {
+    if(e.target === modalAutoOut) {
+      // intentionally blocked — admin harus eksplisit memilih
+    }
+  });
+}
 
 // Modal Management
 const modalTambahUser = document.getElementById('modalTambahUser');
@@ -1185,6 +1593,7 @@ style.textContent = `
   }
 `;
 document.head.appendChild(style);
+
 </script>
 
 <?php include '../asset/footer.php'; ?>

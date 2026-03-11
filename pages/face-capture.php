@@ -2059,8 +2059,8 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
               lastCompareTime = currentTime;
             }
             
-            // AUTO-NOTIFY & INSTAN AUTO-SUBMIT ketika confidence > 40%
-            if(currentConfidence > 0.4 && selectedStatus && !autoSubmitScheduled) {
+            // AUTO-NOTIFY & INSTAN AUTO-SUBMIT ketika confidence > 30%
+            if(currentConfidence > 0.3 && selectedStatus && !autoSubmitScheduled) {
               // Check apakah status valid (sesuai allowedStatus)
               const isStatusValid = (selectedStatus === currentUserData?.allowedStatus);
               
@@ -2378,7 +2378,7 @@ $labor_list = mysqli_fetch_all($labor_query, MYSQLI_ASSOC);
         return false;
       }
     } else if(status === 'OUT') {
-      // Pulang: default 16:00, TAPI EXCEPTION jika ada outstanding IN dari kemarin
+      // Pulang: default 15:00, TAPI EXCEPTION jika ada outstanding IN dari kemarin
       // Untuk handle exception, backend akan validate dan return error jika needed
       // Jadi kita allow request ke backend untuk semua jam, dan biarkan backend decide
       
