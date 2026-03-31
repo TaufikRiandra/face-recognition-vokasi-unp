@@ -1,16 +1,16 @@
 <?php
 /**
- * Export Users to PDF
- * Requires: TCPDF library
+ * Export Users to PDF (HTML-based without external library)
+ * Uses browser's native PDF printing capability
  * Usage: POST /api_export_users_pdf.php
  */
 
-header('Content-Type: application/json');
+header('Content-Type: text/html; charset=UTF-8');
 
 include 'koneksi.php';
 
 try {
-    // Get all users from database
+    // Get all active users from database
     $query = "SELECT id, nama, nim, created_at FROM users WHERE is_active = 1 ORDER BY nama ASC";
     $result = mysqli_query($conn, $query);
     
@@ -23,71 +23,189 @@ try {
         $users[] = $row;
     }
     
-    // Check if TCPDF is available
-    $tcpdf_path = __DIR__ . '/../vendor/tecnickcom/tcpdf/tcpdf.php';
-    
-    if (!file_exists($tcpdf_path)) {
-        // If TCPDF not available, return error with installation instructions
-        throw new Exception("TCPDF library not found. Install with: composer require tecnickcom/tcpdf");
-    }
-    
-    require_once($tcpdf_path);
-    
-    // Create PDF object
-    $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
-    
-    // Set document properties
-    $pdf->SetCreator('Sistem Absensi');
-    $pdf->SetAuthor('Sistem Absensi');
-    $pdf->SetTitle('Daftar User');
-    $pdf->SetSubject('Data User');
-    
-    // Set font
-    $pdf->SetFont('helvetica', '', 10);
-    
-    // Add a page
-    $pdf->AddPage();
-    
-    // Set header
-    $pdf->SetFont('helvetica', 'B', 14);
-    $pdf->Cell(0, 10, 'Daftar User', 0, 1, 'C');
-    $pdf->SetFont('helvetica', '', 10);
-    $pdf->Cell(0, 5, 'Tanggal: ' . date('d-m-Y H:i:s'), 0, 1, 'C');
-    $pdf->Ln(10);
-    
-    // Table header
-    $pdf->SetFont('helvetica', 'B', 10);
-    $pdf->SetFillColor(245, 158, 11); // Primary yellow color
-    $pdf->SetTextColor(255, 255, 255);
-    
-    $w = array(15, 60, 40, 50);
-    $header = array('No', 'Nama', 'NIM', 'Tanggal Dibuat');
-    for($i = 0; $i < count($header); $i++) {
-        $pdf->Cell($w[$i], 7, $header[$i], 1, 0, 'C', true);
-    }
-    $pdf->Ln();
-    
-    // Table data
-    $pdf->SetFont('helvetica', '', 9);
-    $pdf->SetTextColor(0, 0, 0);
-    $pdf->SetFillColor(240, 248, 255); // Light background
-    
-    $fill = false;
-    foreach ($users as $idx => $user) {
-        $pdf->Cell($w[0], 6, $idx + 1, 'LR', 0, 'C', $fill);
-        $pdf->Cell($w[1], 6, substr($user['nama'], 0, 25), 'LR', 0, 'L', $fill);
-        $pdf->Cell($w[2], 6, $user['nim'], 'LR', 0, 'C', $fill);
-        $pdf->Cell($w[3], 6, $user['created_at'], 'LR', 0, 'C', $fill);
-        $pdf->Ln();
-        $fill = !$fill;
-    }
-    
-    // Close table
-    $pdf->Cell(array_sum($w), 0, '', 'T');
-    
-    // Send PDF to browser
     $filename = 'Daftar_User_' . date('d-m-Y_His') . '.pdf';
-    $pdf->Output($filename, 'D'); // 'D' = download
+    $current_date = date('d-m-Y H:i:s');
+    $total_users = count($users);
+    
+    ?>
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Daftar User</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                background: white;
+                padding: 40px;
+            }
+            
+            .header {
+                text-align: center;
+                margin-bottom: 30px;
+                border-bottom: 3px solid #f59e0b;
+                padding-bottom: 20px;
+            }
+            
+            .header h1 {
+                font-size: 28px;
+                color: #1f2937;
+                margin-bottom: 8px;
+            }
+            
+            .header p {
+                font-size: 14px;
+                color: #6b7280;
+                margin: 4px 0;
+            }
+            
+            .info-box {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 25px;
+                padding: 12px;
+                background: #f9fafb;
+                border-radius: 6px;
+                border-left: 4px solid #f59e0b;
+            }
+            
+            .info-box p {
+                font-size: 13px;
+                color: #4b5563;
+                margin: 0;
+            }
+            
+            .info-box strong {
+                color: #1f2937;
+            }
+            
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 20px;
+            }
+            
+            thead {
+                background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+                color: white;
+            }
+            
+            th {
+                padding: 14px 12px;
+                text-align: left;
+                font-weight: 600;
+                font-size: 13px;
+                letter-spacing: 0.5px;
+            }
+            
+            td {
+                padding: 12px;
+                border-bottom: 1px solid #e5e7eb;
+                font-size: 13px;
+            }
+            
+            tbody tr:nth-child(even) {
+                background-color: #f9fafb;
+            }
+            
+            tbody tr:hover {
+                background-color: #f3f4f6;
+            }
+            
+            .no {
+                width: 50px;
+                text-align: center;
+                font-weight: 600;
+                color: #6b7280;
+            }
+            
+            .nama {
+                font-weight: 500;
+                color: #1f2937;
+            }
+            
+            .nim {
+                font-family: 'Courier New', monospace;
+                color: #4b5563;
+                font-weight: 500;
+            }
+            
+            .created_at {
+                color: #6b7280;
+                font-size: 12px;
+            }
+            
+            .footer {
+                text-align: center;
+                margin-top: 40px;
+                padding-top: 20px;
+                border-top: 1px solid #e5e7eb;
+                font-size: 12px;
+                color: #9ca3af;
+            }
+            
+            @media print {
+                body {
+                    padding: 0;
+                }
+                .no-print {
+                    display: none;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1>📋 Daftar User Sistem Absensi</h1>
+            <p>Laporan Data Pengguna Aktif</p>
+        </div>
+        
+        <div class="info-box">
+            <p><strong>Tanggal Cetak:</strong> <?= $current_date ?></p>
+            <p><strong>Total User:</strong> <?= $total_users ?> pengguna aktif</p>
+        </div>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th class="no">No</th>
+                    <th>Nama Lengkap</th>
+                    <th>NIM</th>
+                    <th>Tanggal Dibuat</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach($users as $idx => $user): ?>
+                <tr>
+                    <td class="no"><?= $idx + 1 ?></td>
+                    <td class="nama"><?= htmlspecialchars($user['nama']) ?></td>
+                    <td class="nim"><?= htmlspecialchars($user['nim']) ?></td>
+                    <td class="created_at"><?= date('d-m-Y H:i:s', strtotime($user['created_at'])) ?></td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+        
+        <div class="footer">
+            <p>Dokumen ini dihasilkan secara otomatis oleh Sistem Absensi Laboratorium</p>
+            <p>Mohon gunakan browser untuk mencetak ke PDF (Ctrl+P → Save as PDF)</p>
+        </div>
+        
+        <script>
+            // Auto-trigger print dialog untuk PDF
+            window.print();
+        </script>
+    </body>
+    </html>
+    <?php
     
 } catch (Exception $e) {
     http_response_code(500);

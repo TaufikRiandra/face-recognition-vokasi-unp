@@ -15001,3 +15001,246 @@
 [2026-03-31 10:44:07] 13064 Query length: 194
 [2026-03-31 10:44:07] 13064 SUCCESS: Attendance recorded - attendance_id: 279
 [2026-03-31 10:44:07] 13064 === SUBMIT_ATTENDANCE END ===
+
+====================================================================================================
+[2026-03-31 11:34:01] 13064 === ATTENDANCE REQUEST ===
+[2026-03-31 11:34:01] 13064 Session admin_id: 1
+[2026-03-31 11:34:01] 13064 POST data: {"action":"submit_attendance","user_id":"99","labor_id":"3","status":"IN","confidence":"0.95"}
+[2026-03-31 11:34:01] 13064 Server time: 2026-03-31 11:34:01 (TZ: Asia/Jakarta)
+[2026-03-31 11:34:01] 13064 DB Connection: OK
+[2026-03-31 11:34:01] 13064 Action: submit_attendance (POST: submit_attendance, GET: null)
+[2026-03-31 11:34:01] 13064 ========== validateAttendanceTime START ==========
+[2026-03-31 11:34:01] 13064 STATUS: IN
+[2026-03-31 11:34:01] 13064 USER_ID: 99
+[2026-03-31 11:34:01] 13064 LABOR_ID: \mysqli::__set_state(array(
+))
+[2026-03-31 11:34:01] 13064 CURRENT_TIME: 11:34:01
+[2026-03-31 11:34:01] 13064 ========== validateAttendanceTime END ==========
+[2026-03-31 11:34:01] 13064 === validateDailyLimit START - user_id: 99, status: IN ===
+[2026-03-31 11:34:01] 13064 Outstanding IN (any past date): outstanding_in_count=0, today_out=0, has_outstanding=
+[2026-03-31 11:34:01] 13064 Validating IN request...
+[2026-03-31 11:34:01] 13064 Today IN count: 0
+[2026-03-31 11:34:01] 13064 validateDailyLimit PASSED - status valid
+[2026-03-31 11:34:01] 13064 === Proceeding after Daily Limit Validation ===
+[2026-03-31 11:34:01] 13064 About to query user data for user_id: 99
+[2026-03-31 11:34:01] 13064 User query executed, rows: 1
+[2026-03-31 11:34:01] 13064 User found: Taufik Riandra (ID: 99)
+[2026-03-31 11:34:01] 13064 About to check last status today...
+[2026-03-31 11:34:01] 13064 Last status today: NULL
+[2026-03-31 11:34:01] 13064 About to check outstanding IN (any past date)...
+[2026-03-31 11:34:01] 13064 Outstanding IN check (any past date) - outstanding_in_count: 0, has_outstanding: NO
+[2026-03-31 11:34:01] 13064 Checking status transition...
+[2026-03-31 11:34:01] 13064 ALLOWED: Status transition valid - lastStatus: NULL, status: IN
+[2026-03-31 11:34:01] 13064 Calculating keterangan...
+[2026-03-31 11:34:01] 13064 DEBUG keterangan logic:
+[2026-03-31 11:34:01] 13064   - status: IN (should be OUT)
+[2026-03-31 11:34:01] 13064   - has_outstanding_in: NO
+[2026-03-31 11:34:01] 13064   - lastStatus: NULL
+[2026-03-31 11:34:01] 13064   - condition check: status=OUT? N, has_outstanding? N, lastStatus=null? Y
+[2026-03-31 11:34:01] 13064 ❌ NOT MATCHED: Will use hitungKeterangan()
+[2026-03-31 11:34:01] 13064 Final Keterangan: terlambat
+[2026-03-31 11:34:01] 13064 Keterangan (escaped): [terlambat]
+[2026-03-31 11:34:01] 13064 Keterangan length: 9
+[2026-03-31 11:34:01] 13064 Keterangan bytes: 7465726c616d626174
+[2026-03-31 11:34:01] 13064 About to INSERT attendance - Query:      INSERT INTO attendance_logs (user_id, labor_id, status, confidence_score, stored_user_nama, keterangan, created_at)     VALUES (99, 3, 'IN', 0.95, 'Taufik Riandra', 'terlambat', NOW())   
+[2026-03-31 11:34:01] 13064 Query length: 192
+[2026-03-31 11:34:01] 13064 SUCCESS: Attendance recorded - attendance_id: 280
+[2026-03-31 11:34:01] 13064 === SUBMIT_ATTENDANCE END ===
+
+====================================================================================================
+[2026-03-31 11:34:04] 13064 === ATTENDANCE REQUEST ===
+[2026-03-31 11:34:04] 13064 Session admin_id: 1
+[2026-03-31 11:34:04] 13064 POST data: {"action":"submit_attendance","user_id":"99","labor_id":"3","status":"IN","confidence":"0.95"}
+[2026-03-31 11:34:04] 13064 Server time: 2026-03-31 11:34:04 (TZ: Asia/Jakarta)
+[2026-03-31 11:34:04] 13064 DB Connection: OK
+[2026-03-31 11:34:04] 13064 Action: submit_attendance (POST: submit_attendance, GET: null)
+[2026-03-31 11:34:04] 13064 ========== validateAttendanceTime START ==========
+[2026-03-31 11:34:04] 13064 STATUS: IN
+[2026-03-31 11:34:04] 13064 USER_ID: 99
+[2026-03-31 11:34:04] 13064 LABOR_ID: \mysqli::__set_state(array(
+))
+[2026-03-31 11:34:04] 13064 CURRENT_TIME: 11:34:04
+[2026-03-31 11:34:04] 13064 ========== validateAttendanceTime END ==========
+[2026-03-31 11:34:04] 13064 === validateDailyLimit START - user_id: 99, status: IN ===
+[2026-03-31 11:34:04] 13064 Outstanding IN (any past date): outstanding_in_count=0, today_out=0, has_outstanding=
+[2026-03-31 11:34:04] 13064 Validating IN request...
+[2026-03-31 11:34:04] 13064 Today IN count: 1
+[2026-03-31 11:34:04] 13064 REJECT: Already IN once today
+
+====================================================================================================
+[2026-03-31 11:34:04] 13064 === ATTENDANCE REQUEST ===
+[2026-03-31 11:34:04] 13064 Session admin_id: 1
+[2026-03-31 11:34:04] 13064 POST data: {"action":"submit_attendance","user_id":"99","labor_id":"3","status":"IN","confidence":"0.95"}
+[2026-03-31 11:34:04] 13064 Server time: 2026-03-31 11:34:04 (TZ: Asia/Jakarta)
+[2026-03-31 11:34:04] 13064 DB Connection: OK
+[2026-03-31 11:34:04] 13064 Action: submit_attendance (POST: submit_attendance, GET: null)
+[2026-03-31 11:34:04] 13064 ========== validateAttendanceTime START ==========
+[2026-03-31 11:34:04] 13064 STATUS: IN
+[2026-03-31 11:34:04] 13064 USER_ID: 99
+[2026-03-31 11:34:04] 13064 LABOR_ID: \mysqli::__set_state(array(
+))
+[2026-03-31 11:34:04] 13064 CURRENT_TIME: 11:34:04
+[2026-03-31 11:34:04] 13064 ========== validateAttendanceTime END ==========
+[2026-03-31 11:34:04] 13064 === validateDailyLimit START - user_id: 99, status: IN ===
+[2026-03-31 11:34:05] 13064 Outstanding IN (any past date): outstanding_in_count=0, today_out=0, has_outstanding=
+[2026-03-31 11:34:05] 13064 Validating IN request...
+[2026-03-31 11:34:05] 13064 Today IN count: 1
+[2026-03-31 11:34:05] 13064 REJECT: Already IN once today
+
+====================================================================================================
+[2026-03-31 11:34:05] 13064 === ATTENDANCE REQUEST ===
+[2026-03-31 11:34:05] 13064 Session admin_id: 1
+[2026-03-31 11:34:05] 13064 POST data: {"action":"submit_attendance","user_id":"99","labor_id":"3","status":"IN","confidence":"0.95"}
+[2026-03-31 11:34:05] 13064 Server time: 2026-03-31 11:34:05 (TZ: Asia/Jakarta)
+[2026-03-31 11:34:05] 13064 DB Connection: OK
+[2026-03-31 11:34:05] 13064 Action: submit_attendance (POST: submit_attendance, GET: null)
+[2026-03-31 11:34:05] 13064 ========== validateAttendanceTime START ==========
+[2026-03-31 11:34:05] 13064 STATUS: IN
+[2026-03-31 11:34:05] 13064 USER_ID: 99
+[2026-03-31 11:34:05] 13064 LABOR_ID: \mysqli::__set_state(array(
+))
+[2026-03-31 11:34:05] 13064 CURRENT_TIME: 11:34:05
+[2026-03-31 11:34:05] 13064 ========== validateAttendanceTime END ==========
+[2026-03-31 11:34:05] 13064 === validateDailyLimit START - user_id: 99, status: IN ===
+[2026-03-31 11:34:05] 13064 Outstanding IN (any past date): outstanding_in_count=0, today_out=0, has_outstanding=
+[2026-03-31 11:34:05] 13064 Validating IN request...
+[2026-03-31 11:34:05] 13064 Today IN count: 1
+[2026-03-31 11:34:05] 13064 REJECT: Already IN once today
+
+====================================================================================================
+[2026-03-31 11:34:05] 13064 === ATTENDANCE REQUEST ===
+[2026-03-31 11:34:05] 13064 Session admin_id: 1
+[2026-03-31 11:34:05] 13064 POST data: {"action":"submit_attendance","user_id":"99","labor_id":"3","status":"IN","confidence":"0.95"}
+[2026-03-31 11:34:05] 13064 Server time: 2026-03-31 11:34:05 (TZ: Asia/Jakarta)
+[2026-03-31 11:34:05] 13064 DB Connection: OK
+[2026-03-31 11:34:05] 13064 Action: submit_attendance (POST: submit_attendance, GET: null)
+[2026-03-31 11:34:05] 13064 ========== validateAttendanceTime START ==========
+[2026-03-31 11:34:05] 13064 STATUS: IN
+[2026-03-31 11:34:05] 13064 USER_ID: 99
+[2026-03-31 11:34:05] 13064 LABOR_ID: \mysqli::__set_state(array(
+))
+[2026-03-31 11:34:05] 13064 CURRENT_TIME: 11:34:05
+[2026-03-31 11:34:05] 13064 ========== validateAttendanceTime END ==========
+[2026-03-31 11:34:05] 13064 === validateDailyLimit START - user_id: 99, status: IN ===
+[2026-03-31 11:34:05] 13064 Outstanding IN (any past date): outstanding_in_count=0, today_out=0, has_outstanding=
+[2026-03-31 11:34:05] 13064 Validating IN request...
+[2026-03-31 11:34:05] 13064 Today IN count: 1
+[2026-03-31 11:34:05] 13064 REJECT: Already IN once today
+
+====================================================================================================
+[2026-03-31 11:34:05] 13064 === ATTENDANCE REQUEST ===
+[2026-03-31 11:34:05] 13064 Session admin_id: 1
+[2026-03-31 11:34:05] 13064 POST data: {"action":"submit_attendance","user_id":"99","labor_id":"3","status":"IN","confidence":"0.95"}
+[2026-03-31 11:34:05] 13064 Server time: 2026-03-31 11:34:05 (TZ: Asia/Jakarta)
+[2026-03-31 11:34:05] 13064 DB Connection: OK
+[2026-03-31 11:34:05] 13064 Action: submit_attendance (POST: submit_attendance, GET: null)
+[2026-03-31 11:34:05] 13064 ========== validateAttendanceTime START ==========
+[2026-03-31 11:34:05] 13064 STATUS: IN
+[2026-03-31 11:34:05] 13064 USER_ID: 99
+[2026-03-31 11:34:05] 13064 LABOR_ID: \mysqli::__set_state(array(
+))
+[2026-03-31 11:34:05] 13064 CURRENT_TIME: 11:34:05
+[2026-03-31 11:34:05] 13064 ========== validateAttendanceTime END ==========
+[2026-03-31 11:34:05] 13064 === validateDailyLimit START - user_id: 99, status: IN ===
+[2026-03-31 11:34:05] 13064 Outstanding IN (any past date): outstanding_in_count=0, today_out=0, has_outstanding=
+[2026-03-31 11:34:05] 13064 Validating IN request...
+[2026-03-31 11:34:05] 13064 Today IN count: 1
+[2026-03-31 11:34:05] 13064 REJECT: Already IN once today
+
+====================================================================================================
+[2026-03-31 11:45:50] 13064 === ATTENDANCE REQUEST ===
+[2026-03-31 11:45:50] 13064 Session admin_id: 1
+[2026-03-31 11:45:50] 13064 POST data: {"action":"submit_attendance","user_id":"99","labor_id":"3","status":"IN","confidence":"0.95"}
+[2026-03-31 11:45:50] 13064 Server time: 2026-03-31 11:45:50 (TZ: Asia/Jakarta)
+[2026-03-31 11:45:50] 13064 DB Connection: OK
+[2026-03-31 11:45:50] 13064 Action: submit_attendance (POST: submit_attendance, GET: null)
+[2026-03-31 11:45:50] 13064 ========== validateAttendanceTime START ==========
+[2026-03-31 11:45:50] 13064 STATUS: IN | USER_ID: 99 | LABOR_ID: 3 | TIME: 11:45:50
+[2026-03-31 11:45:50] 13064 From DB - jam_masuk_awal: 06:00:00, jam_pulang_standar: 16:00:00
+[2026-03-31 11:45:50] 13064 ✅ ACCEPT: Waktu masuk valid
+[2026-03-31 11:45:50] 13064 ========== validateAttendanceTime END ==========
+[2026-03-31 11:45:50] 13064 === validateDailyLimit START - user_id: 99, status: IN ===
+[2026-03-31 11:45:50] 13064 Outstanding IN (any past date): outstanding_in_count=0, today_out=0, has_outstanding=
+[2026-03-31 11:45:50] 13064 Validating IN request...
+[2026-03-31 11:45:50] 13064 Today IN count: 0
+[2026-03-31 11:45:50] 13064 validateDailyLimit PASSED - status valid
+[2026-03-31 11:45:50] 13064 === Proceeding after Daily Limit Validation ===
+[2026-03-31 11:45:50] 13064 About to query user data for user_id: 99
+[2026-03-31 11:45:50] 13064 User query executed, rows: 1
+[2026-03-31 11:45:50] 13064 User found: Taufik Riandra (ID: 99)
+[2026-03-31 11:45:50] 13064 About to check last status today...
+[2026-03-31 11:45:50] 13064 Last status today: NULL
+[2026-03-31 11:45:50] 13064 About to check outstanding IN (any past date)...
+[2026-03-31 11:45:50] 13064 Outstanding IN check (any past date) - outstanding_in_count: 0, has_outstanding: NO
+[2026-03-31 11:45:50] 13064 Checking status transition...
+[2026-03-31 11:45:50] 13064 ALLOWED: Status transition valid - lastStatus: NULL, status: IN
+[2026-03-31 11:45:50] 13064 Calculating keterangan...
+[2026-03-31 11:45:50] 13064 DEBUG keterangan logic:
+[2026-03-31 11:45:50] 13064   - status: IN (should be OUT)
+[2026-03-31 11:45:50] 13064   - has_outstanding_in: NO
+[2026-03-31 11:45:50] 13064   - lastStatus: NULL
+[2026-03-31 11:45:50] 13064   - condition check: status=OUT? N, has_outstanding? N, lastStatus=null? Y
+[2026-03-31 11:45:50] 13064 ❌ NOT MATCHED: Will use hitungKeterangan()
+[2026-03-31 11:45:50] 13064 Final Keterangan: terlambat
+[2026-03-31 11:45:50] 13064 Keterangan (escaped): [terlambat]
+[2026-03-31 11:45:50] 13064 Keterangan length: 9
+[2026-03-31 11:45:50] 13064 Keterangan bytes: 7465726c616d626174
+[2026-03-31 11:45:50] 13064 About to INSERT attendance - Query:      INSERT INTO attendance_logs (user_id, labor_id, status, confidence_score, stored_user_nama, keterangan, created_at)     VALUES (99, 3, 'IN', 0.95, 'Taufik Riandra', 'terlambat', NOW())   
+[2026-03-31 11:45:50] 13064 Query length: 192
+[2026-03-31 11:45:50] 13064 SUCCESS: Attendance recorded - attendance_id: 281
+[2026-03-31 11:45:50] 13064 === SUBMIT_ATTENDANCE END ===
+
+====================================================================================================
+[2026-03-31 11:55:05] 13064 === ATTENDANCE REQUEST ===
+[2026-03-31 11:55:05] 13064 Session admin_id: 1
+[2026-03-31 11:55:05] 13064 POST data: {"action":"submit_attendance","user_id":"99","labor_id":"3","status":"IN","confidence":"0.95"}
+[2026-03-31 11:55:05] 13064 Server time: 2026-03-31 11:55:05 (TZ: Asia/Jakarta)
+[2026-03-31 11:55:05] 13064 DB Connection: OK
+[2026-03-31 11:55:05] 13064 Action: submit_attendance (POST: submit_attendance, GET: null)
+[2026-03-31 11:55:05] 13064 ========== validateAttendanceTime START ==========
+[2026-03-31 11:55:05] 13064 STATUS: IN | USER_ID: 99 | LABOR_ID: 3 | TIME: 11:55:05
+[2026-03-31 11:55:05] 13064 From DB - jam_masuk_awal: 06:00:00, jam_pulang_standar: 16:00:00
+[2026-03-31 11:55:05] 13064 ✅ ACCEPT: Waktu masuk valid
+[2026-03-31 11:55:05] 13064 ========== validateAttendanceTime END ==========
+[2026-03-31 11:55:05] 13064 === validateDailyLimit START - user_id: 99, status: IN ===
+[2026-03-31 11:55:05] 13064 Outstanding IN (any past date): outstanding_in_count=0, today_out=0, has_outstanding=
+[2026-03-31 11:55:05] 13064 Validating IN request...
+[2026-03-31 11:55:05] 13064 Today IN count: 0
+[2026-03-31 11:55:05] 13064 validateDailyLimit PASSED - status valid
+[2026-03-31 11:55:05] 13064 === Proceeding after Daily Limit Validation ===
+[2026-03-31 11:55:05] 13064 About to query user data for user_id: 99
+[2026-03-31 11:55:05] 13064 User query executed, rows: 1
+[2026-03-31 11:55:05] 13064 User found: Taufik Riandra (ID: 99)
+[2026-03-31 11:55:05] 13064 About to check last status today...
+[2026-03-31 11:55:05] 13064 Last status today: NULL
+[2026-03-31 11:55:05] 13064 About to check outstanding IN (any past date)...
+[2026-03-31 11:55:05] 13064 Outstanding IN check (any past date) - outstanding_in_count: 0, has_outstanding: NO
+[2026-03-31 11:55:05] 13064 Checking status transition...
+[2026-03-31 11:55:05] 13064 ALLOWED: Status transition valid - lastStatus: NULL, status: IN
+[2026-03-31 11:55:05] 13064 Calculating keterangan...
+[2026-03-31 11:55:05] 13064 DEBUG keterangan logic:
+[2026-03-31 11:55:05] 13064   - status: IN (should be OUT)
+[2026-03-31 11:55:05] 13064   - has_outstanding_in: NO
+[2026-03-31 11:55:05] 13064   - lastStatus: NULL
+[2026-03-31 11:55:05] 13064   - condition check: status=OUT? N, has_outstanding? N, lastStatus=null? Y
+[2026-03-31 11:55:05] 13064 ❌ NOT MATCHED: Will use hitungKeterangan()
+[2026-03-31 11:55:05] 13064 Final Keterangan: tepat waktu
+[2026-03-31 11:55:05] 13064 Keterangan (escaped): [tepat waktu]
+[2026-03-31 11:55:05] 13064 Keterangan length: 11
+[2026-03-31 11:55:05] 13064 Keterangan bytes: 74657061742077616b7475
+[2026-03-31 11:55:05] 13064 About to INSERT attendance - Query:      INSERT INTO attendance_logs (user_id, labor_id, status, confidence_score, stored_user_nama, keterangan, created_at)     VALUES (99, 3, 'IN', 0.95, 'Taufik Riandra', 'tepat waktu', NOW())   
+[2026-03-31 11:55:05] 13064 Query length: 194
+[2026-03-31 11:55:05] 13064 SUCCESS: Attendance recorded - attendance_id: 282
+[2026-03-31 11:55:05] 13064 === SUBMIT_ATTENDANCE END ===
+
+====================================================================================================
+[2026-03-31 11:56:01] 13064 === ATTENDANCE REQUEST ===
+[2026-03-31 11:56:01] 13064 Session admin_id: 1
+[2026-03-31 11:56:01] 13064 POST data: {"action":"submit_attendance","user_id":"99","labor_id":"3","status":"IN","confidence":"0.95"}
+[2026-03-31 11:56:01] 13064 Server time: 2026-03-31 11:56:01 (TZ: Asia/Jakarta)
+[2026-03-31 11:56:01] 13064 DB Connection: OK
+[2026-03-31 11:56:01] 13064 Action: submit_attendance (POST: submit_attendance, GET: null)
+[2026-03-31 11:56:01] 13064 ========== validateAttendanceTime START ==========
+[2026-03-31 11:56:01] 13064 STATUS: IN | USER_ID: 99 | LABOR_ID: 3 | TIME: 11:56:01
+[2026-03-31 11:56:01] 13064 From DB - jam_masuk_awal: 12:00:00, jam_pulang_standar: 16:00:00
+[2026-03-31 11:56:01] 13064 ❌ REJECT: Jam 11:56:01 < batas 12:00

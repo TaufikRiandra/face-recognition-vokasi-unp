@@ -1314,19 +1314,40 @@ $has_outstanding = count($outstanding_students) > 0;
 
 <!-- Modal Atur Waktu (Schedule Management) -->
 <div id="modalAturWaktu" class="modal-overlay">
-  <div class="modal-content">
+  <div class="modal-content" style="max-width: 550px;">
     <div class="modal-header">
       <div class="modal-icon">
         <i class="fas fa-clock"></i>
       </div>
-      <h3>Atur Jadwal Kerja</h3>
+      <h3>Jadwal Kerja & Rekapitulasi Hari Ini</h3>
+    </div>
+
+    <!-- Rekapitulasi Waktu Hari Ini -->
+    <div id="todayTimesInfo" style="background: #ecfdf5; padding: 14px; border-radius: 8px; margin-bottom: 18px; border-left: 4px solid #10b981; display: none;">
+      <h4 style="margin: 0 0 12px; font-size: 13px; font-weight: 600; color: #047857;">📊 Rekapitulasi Hari Ini</h4>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div>
+          <p style="margin: 0 0 4px; font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600;">Waktu Masuk Awal</p>
+          <p id="firstInTime" style="margin: 0; font-size: 18px; font-weight: 700; color: #059669;">--:--:--</p>
+        </div>
+        <div>
+          <p style="margin: 0 0 4px; font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600;">Waktu Keluar Terakhir</p>
+          <p id="lastOutTime" style="margin: 0; font-size: 18px; font-weight: 700; color: #d97706;">--:--:--</p>
+        </div>
+      </div>
     </div>
 
     <form id="formAturWaktu">
       <div class="modal-form-group">
-        <label for="jamMasukAwal">Jam Masuk (Batas Akhir)</label>
-        <input type="time" id="jamMasukAwal" name="jam_masuk_standar" required>
-        <div class="form-error" id="errorJamMasuk"></div>
+        <label for="jamMasukAwal">Jam Mulai Absen (Kapan bisa masuk)</label>
+        <input type="time" id="jamMasukAwal" name="jam_masuk_awal" required>
+        <div class="form-error" id="errorJamMasukAwal"></div>
+      </div>
+
+      <div class="modal-form-group">
+        <label for="jamMasukStandar">Jam Masuk Standar (Batas akhir tepat waktu)</label>
+        <input type="time" id="jamMasukStandar" name="jam_masuk_standar" required>
+        <div class="form-error" id="errorJamMasukStandar"></div>
       </div>
 
       <div class="modal-form-group">
@@ -1336,19 +1357,27 @@ $has_outstanding = count($outstanding_students) > 0;
       </div>
 
       <div class="modal-form-group">
-        <label for="jamPulang">Jam Pulang (Batas Standar)</label>
+        <label for="jamPulang">Jam Pulang Standar (Mulai lembur jika sesudah ini)</label>
         <input type="time" id="jamPulang" name="jam_pulang_standar" required>
         <div class="form-error" id="errorJamPulang"></div>
       </div>
 
-      <div style="background: #f3f4f6; padding: 12px; border-radius: 5px; margin: 15px 0; font-size: 13px; color: #4b5563;">
+      <div class="modal-form-group">
+        <label for="jamPulangAkhir">Jam Akhir Pulang (Jam terakhir bisa absen)</label>
+        <input type="time" id="jamPulangAkhir" name="jam_pulang_akhir" required>
+        <div class="form-error" id="errorJamPulangAkhir"></div>
+      </div>
+
+      <div style="background: #eff6ff; padding: 12px; border-radius: 5px; margin: 15px 0; font-size: 13px; color: #1e40af; border-left: 4px solid #3b82f6;">
         <i class="fas fa-info-circle"></i>
-        <strong>Cara Kerja:</strong>
+        <strong>Keterangan Waktu:</strong>
         <ul style="margin: 8px 0 0 20px; padding: 0;">
-          <li>Masuk sampai <strong>Jam Masuk + Toleransi</strong> → Tepat waktu</li>
-          <li>Masuk setelah itu → Terlambat</li>
-          <li>Pulang sebelum <strong>Jam Pulang + Toleransi</strong> → Tepat waktu</li>
-          <li>Pulang setelah itu → Lembur</li>
+          <li><strong>Jam Mulai Absen:</strong> Waktu paling awal untuk absen masuk (contoh: 06:00)</li>
+          <li><strong>Jam Masuk Standar:</strong> Batas untuk masuk tepat waktu + toleransi (contoh: 09:15)</li>
+          <li><strong>Toleransi:</strong> Hanya berlaku untuk masuk (contoh: 15 menit)</li>
+          <li><strong>Jam Pulang Standar:</strong> Batas pulang normal (contoh: 18:00 = lembur jika sesudah ini)</li>
+          <li>Masuk sesudah toleransi → Terlambat</li>
+          <li>Pulang sesudah jam standar → Lembur</li>
         </ul>
       </div>
 
@@ -1357,7 +1386,7 @@ $has_outstanding = count($outstanding_students) > 0;
           <i class="fas fa-times"></i> Batal
         </button>
         <button type="submit" id="btnSimpanWaktu" class="modal-btn modal-btn-primary">
-          <i class="fas fa-save"></i> Simpan
+          <i class="fas fa-save"></i> Simpan Jadwal
         </button>
       </div>
     </form>
@@ -1663,10 +1692,31 @@ function openModalAturWaktu() {
     .then(res => res.json())
     .then(data => {
       if(data.success) {
-        document.getElementById('jamMasukAwal').value = data.jam_masuk_standar;
+        document.getElementById('jamMasukAwal').value = data.jam_masuk_awal;
+        document.getElementById('jamMasukStandar').value = data.jam_masuk_standar;
         document.getElementById('jamPulang').value = data.jam_pulang_standar;
+        document.getElementById('jamPulangAkhir').value = data.jam_pulang_akhir;
         document.getElementById('toleransiTerlambat').value = data.toleransi_terlambat;
       }
+      
+      // Load today's first IN and last OUT times
+      const laborId = <?= $selected_labor ?>;
+      fetch(`../backend/api_get_today_times.php?labor_id=${laborId}`)
+        .then(res => res.json())
+        .then(timeData => {
+          if(timeData.success) {
+            const todayInfo = document.getElementById('todayTimesInfo');
+            if(timeData.first_in || timeData.last_out) {
+              document.getElementById('firstInTime').textContent = timeData.first_in || '-';
+              document.getElementById('lastOutTime').textContent = timeData.last_out || '-';
+              todayInfo.style.display = 'block';
+            } else {
+              todayInfo.style.display = 'none';
+            }
+          }
+        })
+        .catch(err => console.warn('Could not load today times:', err));
+      
       modalAturWaktu.classList.add('active');
     })
     .catch(err => {
@@ -1681,43 +1731,51 @@ function closeModalAturWaktu() {
 }
 
 async function saveSchedule() {
-  const jamMasuk = document.getElementById('jamMasukAwal').value;
+  const jamMasukAwal = document.getElementById('jamMasukAwal').value;
+  const jamMasukStandar = document.getElementById('jamMasukStandar').value;
   const jamPulang = document.getElementById('jamPulang').value;
+  const jamPulangAkhir = document.getElementById('jamPulangAkhir').value;
   const toleransi = document.getElementById('toleransiTerlambat').value;
   
-  if(!jamMasuk || !jamPulang || !toleransi) {
-    alert('Semua field harus diisi');
+  if(!jamMasukAwal || !jamMasukStandar || !jamPulang || !jamPulangAkhir || !toleransi) {
+    alert('❌ Semua field harus diisi');
     return;
   }
   
   try {
     btnSimpanWaktu.disabled = true;
+    btnSimpanWaktu.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+    
     const response = await fetch('../backend/api_update_schedule.php', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        jam_masuk_standar: jamMasuk,
+        jam_masuk_awal: jamMasukAwal,
+        jam_masuk_standar: jamMasukStandar,
         jam_pulang_standar: jamPulang,
+        jam_pulang_akhir: jamPulangAkhir,
         toleransi_terlambat: toleransi
       })
     });
     
     const data = await response.json();
     if(data.success) {
-      alert('✓ Jadwal kerja berhasil diperbarui!');
-      closeModalAturWaktu();
-      // Refresh page to show updated schedule
-      location.reload();
+      showSuccessNotification('✓ ' + data.message);
+      setTimeout(() => {
+        closeModalAturWaktu();
+        location.reload();
+      }, 1500);
     } else {
-      alert('Error: ' + data.message);
+      alert('❌ Error: ' + data.message);
     }
   } catch(error) {
     console.error('Error:', error);
-    alert('Terjadi kesalahan saat menyimpan jadwal');
+    alert('❌ Terjadi kesalahan saat menyimpan jadwal');
   } finally {
     btnSimpanWaktu.disabled = false;
+    btnSimpanWaktu.innerHTML = '<i class="fas fa-save"></i> Simpan Jadwal';
   }
 }
 

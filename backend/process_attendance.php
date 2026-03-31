@@ -124,7 +124,7 @@ else if($action === 'save_embedding') {
 
   // VALIDASI WAKTU SERVER-SIDE (tidak bisa dimanipulasi dari client)
   // Cek apakah ada outstanding IN dari kemarin untuk menentukan apakah boleh OUT anytime
-  $time_validation = validateAttendanceTime($status, $user_id, $conn);
+  $time_validation = validateAttendanceTime($status, $user_id, $labor_id, $conn);
   if(!$time_validation['valid']) {
     echo json_encode(['status' => 'error', 'message' => $time_validation['message']]);
     exit;
@@ -210,8 +210,8 @@ else if($action === 'submit_attendance') {
   // VALIDASI WAKTU SERVER-SIDE (tidak bisa dimanipulasi dari client)
   // Menggunakan waktu WIB dari server dengan NTP sync
   // Cek apakah ada outstanding IN dari kemarin untuk menentukan apakah boleh OUT anytime
-  error_log("Calling validateAttendanceTime with user_id=$user_id, conn=" . ($conn ? "OK" : "NULL"));
-  $time_validation = validateAttendanceTime($status, $user_id, $conn);
+  error_log("Calling validateAttendanceTime with user_id=$user_id, labor_id=$labor_id, conn=" . ($conn ? "OK" : "NULL"));
+  $time_validation = validateAttendanceTime($status, $user_id, $labor_id, $conn);
   error_log("Time validation result: " . json_encode($time_validation));
   if(!$time_validation['valid']) {
     error_log("ERROR: Time validation failed - " . $time_validation['message']);
