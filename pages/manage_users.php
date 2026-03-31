@@ -596,6 +596,16 @@ include '../asset/header.php';
       <i class="fas fa-search"></i>
     </div>
 
+    <!-- Export Buttons -->
+    <div style="display: flex; gap: 10px; margin-bottom: 20px; justify-content: flex-end;flex-wrap: wrap;">
+      <button type="button" id="btnExportPdf" class="btn-primary" style="background: #DC2626; margin: 0; display: flex; align-items: center; gap: 8px;">
+        <i class="fas fa-file-pdf"></i> Export PDF
+      </button>
+      <button type="button" id="btnExportExcel" class="btn-primary" style="background: #059669; margin: 0; display: flex; align-items: center; gap: 8px;">
+        <i class="fas fa-file-excel"></i> Export Excel
+      </button>
+    </div>
+
     <div id="resultContainer">
       <div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i><p style="margin-top: 15px;">Memuat data user...</p></div>
     </div>
@@ -702,10 +712,10 @@ function displayUsersTable(users) {
   const endIdx = startIdx + itemsPerPage;
   const pageUsers = users.slice(startIdx, endIdx);
   
-  let html = '<table class="users-table"><thead><tr><th style="width: 25%;">Nama</th><th style="width: 15%; text-align: center;">NIM</th><th style="width: 15%; text-align: center;">Tanggal</th><th style="width: 12%; text-align: center;">Waktu</th><th style="width: 33%; text-align: center;">Aksi</th></tr></thead><tbody>';
+  let html = '<table class="users-table"><thead><tr><th style="width: 5%; text-align: center;">No</th><th style="width: 20%;">Nama</th><th style="width: 15%; text-align: center;">NIM</th><th style="width: 15%; text-align: center;">Tanggal</th><th style="width: 12%; text-align: center;">Waktu</th><th style="width: 33%; text-align: center;">Aksi</th></tr></thead><tbody>';
   
   if(pageUsers.length > 0) {
-    pageUsers.forEach(user => {
+    pageUsers.forEach((user, index) => {
       let tanggal = '-';
       let waktu = '-';
       if(user.created_at) {
@@ -713,8 +723,10 @@ function displayUsersTable(users) {
         tanggal = parts[0];
         waktu = parts[1];
       }
+      const rowNum = startIdx + index + 1;
       html += `
         <tr>
+          <td class="table-no" style="text-align: center; font-weight: 600;">${rowNum}</td>
           <td class="table-nama">${user.nama}</td>
           <td class="table-nim">${user.nim}</td>
           <td class="table-date">${tanggal}</td>
@@ -1003,6 +1015,16 @@ function updatePaginationButtons(users) {
 
 // Event listeners
 btnBatalEdit.addEventListener('click', closeEditModal);
+
+// Export to PDF
+document.getElementById('btnExportPdf')?.addEventListener('click', function() {
+  window.location.href = '../backend/api_export_users_pdf.php';
+});
+
+// Export to Excel (CSV)
+document.getElementById('btnExportExcel')?.addEventListener('click', function() {
+  window.location.href = '../backend/api_export_users_excel.php';
+});
 
 // Close modal when clicking outside (with confirmation)
 modalEditUser.addEventListener('click', function(e) {

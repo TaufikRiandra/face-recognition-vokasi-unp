@@ -50,7 +50,7 @@ function validateAttendanceTime($status, $user_id = null, $conn = null) {
             ];
         }
     } else if($status === 'OUT') {
-        // Absen KELUAR: default mulai dari 15:00
+        // Absen KELUAR: default mulai dari 16:00
         // EXCEPTION: Jika ada IN (tanggal berapa pun) yang belum OUT, allow OUT kapan saja
         $min_hour = 15;
         
@@ -119,7 +119,7 @@ function validateAttendanceTime($status, $user_id = null, $conn = null) {
                     writeAttendanceLog("✅ DECISION: Outstanding IN detected + No OUT today yet = Allow OUT anytime (close lembur)");
                 } else {
                     $allow_anytime_out = false;
-                    writeAttendanceLog("⚠️  DECISION: Outstanding IN detected BUT already OUTed today = Require 15:00 for next OUT");
+                    writeAttendanceLog("⚠️  DECISION: Outstanding IN detected BUT already OUTed today = Require 16:00 for next OUT");
                 }
             } else {
                 writeAttendanceLog("❌ DECISION: No outstanding IN from past dates");
@@ -133,12 +133,12 @@ function validateAttendanceTime($status, $user_id = null, $conn = null) {
         
         writeAttendanceLog("ALLOW_ANYTIME_OUT: " . ($allow_anytime_out ? 'YES' : 'NO'));
         
-        // Jika tidak ada outstanding IN, enforce jam 15:00
+        // Jika tidak ada outstanding IN, enforce jam 16:00
         if(!$allow_anytime_out && $current_hours < $min_hour) {
             writeAttendanceLog("❌ REJECT: Jam terlalu awal ($current_time) dan tidak ada outstanding IN");
             return [
                 'valid' => false,
-                'message' => 'Absensi pulang dimulai dari jam 15:00 WIB. Waktu server: ' . $current_time,
+                'message' => 'Absensi pulang dimulai dari jam 16:00 WIB. Waktu server: ' . $current_time,
                 'current_time' => $current_time
             ];
         }
@@ -358,21 +358,21 @@ function hitungKeterangan($status, $waktu_attendance, $labor_id, $conn) {
     if(!$result || mysqli_num_rows($result) == 0) {
         // Default jika tidak ada setting labor
         $jam_masuk = '08:00:00';
-        $jam_pulang = '15:00:00';
+        $jam_pulang = '16:00:00';
         $toleransi = 15;
     } else {
         $labor = mysqli_fetch_assoc($result);
-        $jam_masuk = $labor['jam_masuk_standar'] ?? '09:30:00';
-        $jam_pulang = $labor['jam_pulang_standar'] ?? '18:30:00';
-        $toleransi = $labor['toleransi_terlambat'] ?? 1;
+        $jam_masuk = $labor['jam_masuk_standar'] ?? '09:00:00';
+        $jam_pulang = $labor['jam_pulang_standar'] ?? '18:00:00';
+        $toleransi = $labor['toleransi_terlambat'] ?? 15;
     }
     
     // Extract waktu dari datetime
     $jam_att = date('H:i:s', strtotime($waktu_attendance));
     
     if($status === 'IN') {
-        // Untuk masuk: jam_masuk adalah batas akhir masuk (09:30)
-        // Jika melebihi jam_masuk + toleransi (09:31) = terlambat
+        // Untuk masuk: jam_masuk adalah batas akhir masuk (09:00)
+        // Jika melebihi jam_masuk + toleransi (09:15) = terlambat
         $jam_batas = date('H:i:s', strtotime($jam_masuk) + ($toleransi * 60));
         
         if($jam_att > $jam_batas) {
@@ -381,8 +381,8 @@ function hitungKeterangan($status, $waktu_attendance, $labor_id, $conn) {
             return 'tepat waktu';
         }
     } elseif($status === 'OUT') {
-        // Untuk OUT: jam_pulang adalah batas pulang normal (18:30)
-        // Jika melebihi jam_pulang + toleransi (18:31) = lembur
+        // Untuk OUT: jam_pulang adalah batas pulang normal (18:00)
+        // Jika melebihi jam_pulang + toleransi (18:00) = lembur
         $jam_batas_lembur = date('H:i:s', strtotime($jam_pulang) + ($toleransi * 60));
         
         if($jam_att > $jam_batas_lembur) {

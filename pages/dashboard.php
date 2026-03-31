@@ -1056,6 +1056,9 @@ $has_outstanding = count($outstanding_students) > 0;
             </option>
           <?php endforeach; ?>
         </select>
+        <button id="btnAturWaktu" class="btn btn-primary" style="white-space: nowrap;" title="Atur jadwal masuk, keluar, dan toleransi keterlambatan">
+          <i class="fas fa-clock"></i> Atur Waktu
+        </button>
         <button id="btnTambahUser" class="btn btn-primary" style="white-space: nowrap;">
           <i class="fas fa-user-plus"></i> Tambah User
         </button>
@@ -1309,6 +1312,60 @@ $has_outstanding = count($outstanding_students) > 0;
   </div>
 </div>
 
+<!-- Modal Atur Waktu (Schedule Management) -->
+<div id="modalAturWaktu" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-icon">
+        <i class="fas fa-clock"></i>
+      </div>
+      <h3>Atur Jadwal Kerja</h3>
+    </div>
+
+    <form id="formAturWaktu">
+      <div class="modal-form-group">
+        <label for="jamMasukAwal">Jam Masuk (Batas Akhir)</label>
+        <input type="time" id="jamMasukAwal" name="jam_masuk_standar" required>
+        <div class="form-error" id="errorJamMasuk"></div>
+      </div>
+
+      <div class="modal-form-group">
+        <label for="toleransiTerlambat">Toleransi Keterlambatan (menit)</label>
+        <input type="number" id="toleransiTerlambat" name="toleransi_terlambat" min="0" max="120" required>
+        <div class="form-error" id="errorTolerasi"></div>
+      </div>
+
+      <div class="modal-form-group">
+        <label for="jamPulang">Jam Pulang (Batas Standar)</label>
+        <input type="time" id="jamPulang" name="jam_pulang_standar" required>
+        <div class="form-error" id="errorJamPulang"></div>
+      </div>
+
+      <div style="background: #f3f4f6; padding: 12px; border-radius: 5px; margin: 15px 0; font-size: 13px; color: #4b5563;">
+        <i class="fas fa-info-circle"></i>
+        <strong>Cara Kerja:</strong>
+        <ul style="margin: 8px 0 0 20px; padding: 0;">
+          <li>Masuk sampai <strong>Jam Masuk + Toleransi</strong> → Tepat waktu</li>
+          <li>Masuk setelah itu → Terlambat</li>
+          <li>Pulang sebelum <strong>Jam Pulang + Toleransi</strong> → Tepat waktu</li>
+          <li>Pulang setelah itu → Lembur</li>
+        </ul>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" id="btnBatalWaktu" class="modal-btn modal-btn-secondary">
+          <i class="fas fa-times"></i> Batal
+        </button>
+        <button type="submit" id="btnSimpanWaktu" class="modal-btn modal-btn-primary">
+          <i class="fas fa-save"></i> Simpan
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
@@ -1411,6 +1468,13 @@ const btnBatalUser = document.getElementById('btnBatalUser');
 const btnSimpanUser = document.getElementById('btnSimpanUser');
 const inputNama = document.getElementById('inputNama');
 const inputNIM = document.getElementById('inputNIM');
+
+// Schedule Management
+const modalAturWaktu = document.getElementById('modalAturWaktu');
+const formAturWaktu = document.getElementById('formAturWaktu');
+const btnAturWaktu = document.getElementById('btnAturWaktu');
+const btnBatalWaktu = document.getElementById('btnBatalWaktu');
+const btnSimpanWaktu = document.getElementById('btnSimpanWaktu');
 
 let formHasChanged = false;
 let isSubmitting = false;
@@ -1560,10 +1624,25 @@ function showSuccessNotification(message) {
 btnTambahUser.addEventListener('click', openModalTambahUser);
 btnBatalUser.addEventListener('click', closeModalTambahUser);
 
+// Schedule Management listeners
+btnAturWaktu.addEventListener('click', openModalAturWaktu);
+btnBatalWaktu.addEventListener('click', closeModalAturWaktu);
+formAturWaktu.addEventListener('submit', async function(e) {
+  e.preventDefault();
+  await saveSchedule();
+});
+
 // Close modal when clicking outside (with confirmation)
 modalTambahUser.addEventListener('click', function(e) {
   if(e.target === modalTambahUser) {
     closeModalTambahUser();
+  }
+});
+
+// Close schedule modal when clicking outside
+modalAturWaktu.addEventListener('click', function(e) {
+  if(e.target === modalAturWaktu) {
+    closeModalAturWaktu();
   }
 });
 
@@ -1572,7 +1651,75 @@ document.addEventListener('keydown', function(e) {
   if(e.key === 'Escape' && modalTambahUser.classList.contains('active')) {
     closeModalTambahUser();
   }
+  if(e.key === 'Escape' && modalAturWaktu.classList.contains('active')) {
+    closeModalAturWaktu();
+  }
 });
+
+// Schedule Management Functions
+function openModalAturWaktu() {
+  // Load current schedule from server
+  fetch('../backend/api_get_schedule.php')
+    .then(res => res.json())
+    .then(data => {
+      if(data.success) {
+        document.getElementById('jamMasukAwal').value = data.jam_masuk_standar;
+        document.getElementById('jamPulang').value = data.jam_pulang_standar;
+        document.getElementById('toleransiTerlambat').value = data.toleransi_terlambat;
+      }
+      modalAturWaktu.classList.add('active');
+    })
+    .catch(err => {
+      console.error('Error loading schedule:', err);
+      alert('Gagal memuat jadwal saat ini');
+    });
+}
+
+function closeModalAturWaktu() {
+  modalAturWaktu.classList.remove('active');
+  formAturWaktu.reset();
+}
+
+async function saveSchedule() {
+  const jamMasuk = document.getElementById('jamMasukAwal').value;
+  const jamPulang = document.getElementById('jamPulang').value;
+  const toleransi = document.getElementById('toleransiTerlambat').value;
+  
+  if(!jamMasuk || !jamPulang || !toleransi) {
+    alert('Semua field harus diisi');
+    return;
+  }
+  
+  try {
+    btnSimpanWaktu.disabled = true;
+    const response = await fetch('../backend/api_update_schedule.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        jam_masuk_standar: jamMasuk,
+        jam_pulang_standar: jamPulang,
+        toleransi_terlambat: toleransi
+      })
+    });
+    
+    const data = await response.json();
+    if(data.success) {
+      alert('✓ Jadwal kerja berhasil diperbarui!');
+      closeModalAturWaktu();
+      // Refresh page to show updated schedule
+      location.reload();
+    } else {
+      alert('Error: ' + data.message);
+    }
+  } catch(error) {
+    console.error('Error:', error);
+    alert('Terjadi kesalahan saat menyimpan jadwal');
+  } finally {
+    btnSimpanWaktu.disabled = false;
+  }
+}
 
 // Labor filter dropdown - DISABLED (labor sudah fixed)
 // document.getElementById('laborFilter').addEventListener('change', function() {
